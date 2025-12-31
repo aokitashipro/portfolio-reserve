@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { setupMSW } from './msw-setup';
 
 test.describe('@smoke トップページ', () => {
+  test.beforeEach(async ({ page }) => {
+    await setupMSW(page);
+  });
+
   test('正しくレンダリングされる', async ({ page }) => {
     await page.goto('/');
 

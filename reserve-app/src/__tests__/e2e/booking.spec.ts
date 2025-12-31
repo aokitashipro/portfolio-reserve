@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { setupMSW } from './msw-setup';
 
 test.describe('Booking Flow', () => {
   test.beforeEach(async ({ page }) => {
+    await setupMSW(page);
     // Navigate to booking page
     await page.goto('/booking');
   });
