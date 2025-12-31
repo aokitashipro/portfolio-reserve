@@ -79,23 +79,26 @@ export default function ReservationUpdateModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="reservedDate" className="mb-1 block text-sm font-medium text-gray-700">
               予約日
             </label>
             <input
+              id="reservedDate"
               type="date"
               value={formData.reservedDate}
               onChange={(e) => setFormData({ ...formData, reservedDate: e.target.value })}
               className="w-full rounded-lg border border-gray-300 px-3 py-2"
+              min={new Date().toISOString().split('T')[0]}
               required
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="reservedTime" className="mb-1 block text-sm font-medium text-gray-700">
               時間
             </label>
             <input
+              id="reservedTime"
               type="time"
               value={formData.reservedTime}
               onChange={(e) => setFormData({ ...formData, reservedTime: e.target.value })}
@@ -105,10 +108,11 @@ export default function ReservationUpdateModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="notes" className="mb-1 block text-sm font-medium text-gray-700">
               備考
             </label>
             <textarea
+              id="notes"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               className="w-full rounded-lg border border-gray-300 px-3 py-2"
