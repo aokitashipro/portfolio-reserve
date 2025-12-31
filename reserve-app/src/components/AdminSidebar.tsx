@@ -69,22 +69,23 @@ export default function AdminSidebar() {
   ];
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r bg-white">
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r bg-white" data-testid="admin-sidebar">
       <div className="flex h-16 items-center border-b px-6">
         <div className="flex items-center space-x-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500">
             <span className="text-sm font-bold text-white">R</span>
           </div>
-          <span className="text-lg font-bold text-gray-900">管理画面</span>
+          <span className="text-lg font-bold text-gray-900" data-testid="sidebar-title">管理画面</span>
         </div>
       </div>
 
-      <nav className="space-y-1 p-4">
+      <nav className="space-y-1 p-4" data-testid="sidebar-nav">
         {menuItems.map((item) => (
           <Link
             key={item.name}
             href={item.href}
             className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
+            data-testid={`nav-link-${item.name}`}
           >
             {item.icon}
             {item.name}
@@ -96,6 +97,7 @@ export default function AdminSidebar() {
         <Link
           href="/"
           className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+          data-testid="user-screen-link"
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

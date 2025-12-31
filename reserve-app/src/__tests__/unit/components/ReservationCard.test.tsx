@@ -120,8 +120,7 @@ describe('ReservationCard', () => {
     expect(screen.queryByText('キャンセル')).not.toBeInTheDocument();
   });
 
-  // TODO: このテストはReservationUpdateModalの非同期処理との統合が複雑なため、一時的にスキップ
-  it.skip('should open update modal when edit button is clicked', async () => {
+  it('should open update modal when edit button is clicked', async () => {
     render(<ReservationCard reservation={mockReservation} type="upcoming" onUpdate={mockOnUpdate} />);
 
     const editButton = screen.getByText('変更');
@@ -129,8 +128,93 @@ describe('ReservationCard', () => {
 
     // モーダルが開いたことを確認（非同期処理を待つ）
     await waitFor(() => {
-      expect(screen.getByText('予約を変更')).toBeInTheDocument();
+      expect(screen.getByTestId('reservation-update-modal')).toBeInTheDocument();
     });
+  });
+
+  it('should close update modal when close button is clicked', async () => {
+    render(<ReservationCard reservation={mockReservation} type="upcoming" onUpdate={mockOnUpdate} />);
+
+    const editButton = screen.getByText('変更');
+    fireEvent.click(editButton);
+
+    // モーダルが開いたことを確認
+    await waitFor(() => {
+      expect(screen.getByTestId('reservation-update-modal')).toBeInTheDocument();
+    });
+
+    // モーダルを閉じる
+    const closeButton = screen.getByTestId('close-button');
+    fireEvent.click(closeButton);
+
+    // モーダルが閉じたことを確認
+    await waitFor(() => {
+      expect(screen.queryByTestId('reservation-update-modal')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should call onUpdate when reservation update succeeds', async () => {
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url.includes('/api/menus')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: [{ id: 'menu-1', name: 'Test Menu', price: 1000, duration: 60 }],
+          }),
+        });
+      }
+      if (url.includes('/api/staff')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            success: true,
+            data: [{ id: 'staff-1', name: 'Test Staff' }],
+          }),
+        });
+      }
+      if (url.includes('/api/reservations/1')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true }),
+      });
+    });
+
+    render(<ReservationCard reservation={mockReservation} type="upcoming" onUpdate={mockOnUpdate} />);
+
+    const editButton = screen.getByText('変更');
+    fireEvent.click(editButton);
+
+    // モーダルが開いたことを確認
+    await waitFor(() => {
+      expect(screen.getByTestId('reservation-update-modal')).toBeInTheDocument();
+    });
+
+    // Get next month
+    const nextButton = screen.getByTestId('next-month-button');
+    fireEvent.click(nextButton);
+
+    // Select day
+    const dayButton = screen.getByTestId('calendar-day-15');
+    fireEvent.click(dayButton);
+
+    // Select time
+    const timeButton = screen.getByTestId('time-slot-10:00');
+    fireEvent.click(timeButton);
+
+    // Submit
+    const submitButton = screen.getByTestId('submit-button');
+    fireEvent.click(submitButton);
+
+    // onUpdateが呼ばれることを確認
+    await waitFor(() => {
+      expect(mockOnUpdate).toHaveBeenCalled();
+    }, { timeout: 3000 });
   });
 
   it('should open cancellation dialog when cancel button is clicked', () => {
