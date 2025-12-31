@@ -66,47 +66,60 @@ export const updateReservationSchema = z.object({
 export type UpdateReservationInput = z.infer<typeof updateReservationSchema>;
 
 /**
- * Japanese phone number format validation
- * Accepts: 090-1234-5678, 09012345678, 03-1234-5678, etc.
+ * 認証関連のバリデーション
+ */
+
+/**
+ * 日本の電話番号形式のバリデーション
+ * 対応形式: 090-1234-5678, 09012345678, 03-1234-5678 など
  */
 const phoneRegex = /^(0\d{1,4}-?\d{1,4}-?\d{4}|0\d{9,10})$/;
 
 /**
- * User registration schema
+ * ユーザー登録フォーム
  */
 export const registerSchema = z
   .object({
-    name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
-    email: z.string().email('Invalid email address'),
+    name: z
+      .string()
+      .min(1, '名前を入力してください')
+      .max(100, '名前は100文字以内で入力してください'),
+    email: z
+      .string()
+      .min(1, 'メールアドレスを入力してください')
+      .email('有効なメールアドレスを入力してください'),
     phone: z
       .string()
-      .regex(phoneRegex, 'Invalid phone number format')
+      .regex(phoneRegex, '有効な電話番号を入力してください（例: 090-1234-5678）')
       .optional()
       .or(z.literal('')),
     password: z
       .string()
-      .min(8, 'Password must be at least 8 characters')
-      .max(100, 'Password must be 100 characters or less')
-      .regex(/[a-zA-Z]/, 'Password must contain at least one letter')
-      .regex(/[0-9]/, 'Password must contain at least one number'),
+      .min(8, 'パスワードは8文字以上で入力してください')
+      .max(100, 'パスワードは100文字以内で入力してください')
+      .regex(/[a-zA-Z]/, 'パスワードには少なくとも1つの英字を含めてください')
+      .regex(/[0-9]/, 'パスワードには少なくとも1つの数字を含めてください'),
     passwordConfirm: z.string(),
     termsAccepted: z.boolean().refine((val) => val === true, {
-      message: 'You must accept the terms and conditions',
+      message: '利用規約に同意してください',
     }),
   })
   .refine((data) => data.password === data.passwordConfirm, {
-    message: 'Passwords do not match',
+    message: 'パスワードが一致しません',
     path: ['passwordConfirm'],
   });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 
 /**
- * User login schema
+ * ログインフォーム
  */
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z
+    .string()
+    .min(1, 'メールアドレスを入力してください')
+    .email('有効なメールアドレスを入力してください'),
+  password: z.string().min(1, 'パスワードを入力してください'),
   remember: z.boolean().optional(),
 });
 

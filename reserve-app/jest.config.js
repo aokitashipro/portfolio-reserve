@@ -24,6 +24,7 @@ const customJestConfig = {
     // Exclude integration layer (tested via integration/E2E tests)
     '!src/lib/prisma.ts',
     '!src/lib/supabase.ts',
+    '!src/lib/auth.ts', // Supabase/Prisma integration, covered by E2E tests
   ],
   coverageThreshold: {
     global: {
