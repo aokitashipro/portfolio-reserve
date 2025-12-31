@@ -21,9 +21,17 @@ const mockReservation: Reservation = {
   updatedAt: '2025-01-01T00:00:00Z',
 };
 
-// TODO: このテストはコンポーネントのUIが変更されたため、修正が必要です
-// カレンダーUIがinput要素ではなくボタンUIに変更されたため、getByLabelTextが動作しません
-describe.skip('ReservationUpdateModal', () => {
+const mockMenus = [
+  { id: 'menu-1', name: 'Test Menu', price: 1000, duration: 60 },
+  { id: 'menu-2', name: 'Test Menu 2', price: 2000, duration: 90 },
+];
+
+const mockStaff = [
+  { id: 'staff-1', name: 'Test Staff' },
+  { id: 'staff-2', name: 'Test Staff 2' },
+];
+
+describe('ReservationUpdateModal', () => {
   const mockOnClose = jest.fn();
   const mockOnSuccess = jest.fn();
 
@@ -37,10 +45,7 @@ describe.skip('ReservationUpdateModal', () => {
           ok: true,
           json: async () => ({
             success: true,
-            data: [
-              { id: 'menu-1', name: 'Test Menu', price: 1000, duration: 60 },
-              { id: 'menu-2', name: 'Test Menu 2', price: 2000, duration: 90 },
-            ],
+            data: mockMenus,
           }),
         });
       }
@@ -50,10 +55,7 @@ describe.skip('ReservationUpdateModal', () => {
           ok: true,
           json: async () => ({
             success: true,
-            data: [
-              { id: 'staff-1', name: 'Test Staff' },
-              { id: 'staff-2', name: 'Test Staff 2' },
-            ],
+            data: mockStaff,
           }),
         });
       }
@@ -66,7 +68,7 @@ describe.skip('ReservationUpdateModal', () => {
     });
   });
 
-  it('should render modal with form fields', async () => {
+  it('should render modal with title', async () => {
     render(
       <ReservationUpdateModal
         reservation={mockReservation}
@@ -75,18 +77,11 @@ describe.skip('ReservationUpdateModal', () => {
       />
     );
 
-    expect(screen.getByText('予約を変更')).toBeInTheDocument();
-
-    // Wait for form fields to load (after menus/staff are fetched)
-    await waitFor(() => {
-      expect(screen.getByLabelText('予約日')).toBeInTheDocument();
-    });
-
-    expect(screen.getByLabelText('時間')).toBeInTheDocument();
-    expect(screen.getByLabelText('備考')).toBeInTheDocument();
+    expect(screen.getByTestId('reservation-update-modal')).toBeInTheDocument();
+    expect(screen.getByTestId('modal-title')).toHaveTextContent('予約変更');
   });
 
-  it('should populate form with current reservation data', async () => {
+  it('should close modal when close button is clicked', () => {
     render(
       <ReservationUpdateModal
         reservation={mockReservation}
@@ -95,18 +90,170 @@ describe.skip('ReservationUpdateModal', () => {
       />
     );
 
-    // Wait for form to load
+    const closeButton = screen.getByTestId('close-button');
+    fireEvent.click(closeButton);
+
+    expect(mockOnClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('should call onClose when cancel button is clicked', async () => {
+    render(
+      <ReservationUpdateModal
+        reservation={mockReservation}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />
+    );
+
     await waitFor(() => {
-      expect(screen.getByLabelText('予約日')).toBeInTheDocument();
+      expect(screen.getByTestId('cancel-button')).toBeInTheDocument();
     });
 
-    const dateInput = screen.getByLabelText('予約日') as HTMLInputElement;
-    const timeInput = screen.getByLabelText('時間') as HTMLInputElement;
-    const notesInput = screen.getByLabelText('備考') as HTMLTextAreaElement;
+    const cancelButton = screen.getByTestId('cancel-button');
+    fireEvent.click(cancelButton);
 
-    expect(dateInput.value).toBe('2025-12-31');
-    expect(timeInput.value).toBe('14:00');
-    expect(notesInput.value).toBe('Test notes');
+    expect(mockOnClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('should fetch and display menus and staff', async () => {
+    render(
+      <ReservationUpdateModal
+        reservation={mockReservation}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />
+    );
+
+    // Wait for data to load
+    await waitFor(() => {
+      expect(screen.getByTestId('menu-select')).toBeInTheDocument();
+    });
+
+    const menuSelect = screen.getByTestId('menu-select') as HTMLSelectElement;
+    const staffSelect = screen.getByTestId('staff-select') as HTMLSelectElement;
+
+    expect(menuSelect.options.length).toBe(2);
+    expect(staffSelect.options.length).toBe(2);
+  });
+
+  it('should display current month', () => {
+    render(
+      <ReservationUpdateModal
+        reservation={mockReservation}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />
+    );
+
+    const currentMonth = screen.getByTestId('current-month');
+    const today = new Date();
+    const expectedText = `${today.getFullYear()}年 ${today.getMonth() + 1}月`;
+
+    expect(currentMonth).toHaveTextContent(expectedText);
+  });
+
+  it('should navigate to next month when next button is clicked', () => {
+    render(
+      <ReservationUpdateModal
+        reservation={mockReservation}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />
+    );
+
+    const nextButton = screen.getByTestId('next-month-button');
+    const currentMonth = screen.getByTestId('current-month');
+
+    fireEvent.click(nextButton);
+
+    const today = new Date();
+    const nextMonthDate = new Date(today.getFullYear(), today.getMonth() + 1);
+    const expectedText = `${nextMonthDate.getFullYear()}年 ${nextMonthDate.getMonth() + 1}月`;
+
+    expect(currentMonth).toHaveTextContent(expectedText);
+  });
+
+  it('should navigate to previous month when prev button is clicked', () => {
+    render(
+      <ReservationUpdateModal
+        reservation={mockReservation}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />
+    );
+
+    const prevButton = screen.getByTestId('prev-month-button');
+    const currentMonth = screen.getByTestId('current-month');
+
+    fireEvent.click(prevButton);
+
+    const today = new Date();
+    const prevMonthDate = new Date(today.getFullYear(), today.getMonth() - 1);
+    const expectedText = `${prevMonthDate.getFullYear()}年 ${prevMonthDate.getMonth() + 1}月`;
+
+    expect(currentMonth).toHaveTextContent(expectedText);
+  });
+
+  it('should select a day when calendar day is clicked', () => {
+    render(
+      <ReservationUpdateModal
+        reservation={mockReservation}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />
+    );
+
+    // Get next month to ensure we have future dates
+    const nextButton = screen.getByTestId('next-month-button');
+    fireEvent.click(nextButton);
+
+    const dayButton = screen.getByTestId('calendar-day-15');
+    fireEvent.click(dayButton);
+
+    expect(dayButton).toHaveClass('bg-blue-500');
+  });
+
+  it('should show time selection after day is selected', () => {
+    render(
+      <ReservationUpdateModal
+        reservation={mockReservation}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />
+    );
+
+    // Get next month
+    const nextButton = screen.getByTestId('next-month-button');
+    fireEvent.click(nextButton);
+
+    const dayButton = screen.getByTestId('calendar-day-15');
+    fireEvent.click(dayButton);
+
+    expect(screen.getByTestId('time-selection-section')).toBeInTheDocument();
+  });
+
+  it('should select time slot when time button is clicked', () => {
+    render(
+      <ReservationUpdateModal
+        reservation={mockReservation}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />
+    );
+
+    // Get next month
+    const nextButton = screen.getByTestId('next-month-button');
+    fireEvent.click(nextButton);
+
+    // Select day
+    const dayButton = screen.getByTestId('calendar-day-15');
+    fireEvent.click(dayButton);
+
+    // Select time
+    const timeButton = screen.getByTestId('time-slot-10:00');
+    fireEvent.click(timeButton);
+
+    expect(timeButton).toHaveClass('bg-blue-500');
   });
 
   it('should update notes character count when typing', async () => {
@@ -118,62 +265,41 @@ describe.skip('ReservationUpdateModal', () => {
       />
     );
 
-    // Wait for form to load
     await waitFor(() => {
-      expect(screen.getByLabelText('備考')).toBeInTheDocument();
+      expect(screen.getByTestId('notes-input')).toBeInTheDocument();
     });
 
-    const notesInput = screen.getByLabelText('備考');
+    const notesInput = screen.getByTestId('notes-input');
     fireEvent.change(notesInput, { target: { value: '新しいメモ' } });
 
-    expect(screen.getByText('5/500')).toBeInTheDocument();
+    expect(screen.getByTestId('notes-counter')).toHaveTextContent('5/500');
   });
 
-  it('should call onClose when cancel button is clicked', () => {
-    render(
-      <ReservationUpdateModal
-        reservation={mockReservation}
-        onClose={mockOnClose}
-        onSuccess={mockOnSuccess}
-      />
-    );
-
-    const cancelButton = screen.getByText('キャンセル');
-    fireEvent.click(cancelButton);
-
-    expect(mockOnClose).toHaveBeenCalledTimes(1);
-  });
-
-  it.skip('should successfully update reservation', async () => {
-    // Mock the PATCH request specifically (after initial fetches for menus/staff)
-    (global.fetch as jest.Mock).mockImplementationOnce((url: string) => {
+  it('should successfully update reservation', async () => {
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('/api/menus')) {
         return Promise.resolve({
           ok: true,
-          json: async () => ({
-            success: true,
-            data: [{ id: 'menu-1', name: 'Test Menu', price: 1000, duration: 60 }],
-          }),
+          json: async () => ({ success: true, data: mockMenus }),
         });
       }
-      return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
-    })
-      .mockImplementationOnce((url: string) => {
-        if (url.includes('/api/staff')) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              success: true,
-              data: [{ id: 'staff-1', name: 'Test Staff' }],
-            }),
-          });
-        }
-        return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
-      })
-      .mockResolvedValueOnce({
+      if (url.includes('/api/staff')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true, data: mockStaff }),
+        });
+      }
+      if (url.includes('/api/reservations/1')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true }),
+        });
+      }
+      return Promise.resolve({
         ok: true,
         json: async () => ({ success: true }),
       });
+    });
 
     render(
       <ReservationUpdateModal
@@ -183,63 +309,60 @@ describe.skip('ReservationUpdateModal', () => {
       />
     );
 
-    const dateInput = screen.getByLabelText('予約日');
-    const timeInput = screen.getByLabelText('時間');
+    await waitFor(() => {
+      expect(screen.getByTestId('submit-button')).toBeInTheDocument();
+    });
 
-    fireEvent.change(dateInput, { target: { value: '2026-01-01' } });
-    fireEvent.change(timeInput, { target: { value: '15:00' } });
+    // Get next month
+    const nextButton = screen.getByTestId('next-month-button');
+    fireEvent.click(nextButton);
 
-    const submitButton = screen.getByText('変更を保存');
+    // Select day
+    const dayButton = screen.getByTestId('calendar-day-15');
+    fireEvent.click(dayButton);
+
+    // Select time
+    const timeButton = screen.getByTestId('time-slot-10:00');
+    fireEvent.click(timeButton);
+
+    const submitButton = screen.getByTestId('submit-button');
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(mockOnSuccess).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('success-message')).toBeInTheDocument();
     });
 
-    expect(global.fetch).toHaveBeenCalledWith('/api/reservations/1', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': 'temp-user-id',
-      },
-      body: JSON.stringify({
-        reservedDate: '2026-01-01',
-        reservedTime: '15:00',
-        notes: 'Test notes',
-      }),
-    });
+    expect(screen.getByTestId('success-message')).toHaveTextContent('予約を更新しました');
   });
 
   it('should display error message on failure', async () => {
-    // Mock initial fetches for menus/staff, then mock the PATCH failure
-    (global.fetch as jest.Mock).mockImplementationOnce((url: string) => {
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('/api/menus')) {
         return Promise.resolve({
           ok: true,
+          json: async () => ({ success: true, data: mockMenus }),
+        });
+      }
+      if (url.includes('/api/staff')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true, data: mockStaff }),
+        });
+      }
+      if (url.includes('/api/reservations/1')) {
+        return Promise.resolve({
+          ok: false,
           json: async () => ({
-            success: true,
-            data: [{ id: 'menu-1', name: 'Test Menu', price: 1000, duration: 60 }],
+            success: false,
+            error: { message: '更新に失敗しました' },
           }),
         });
       }
-      return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
-    })
-      .mockImplementationOnce((url: string) => {
-        if (url.includes('/api/staff')) {
-          return Promise.resolve({
-            ok: true,
-            json: async () => ({
-              success: true,
-              data: [{ id: 'staff-1', name: 'Test Staff' }],
-            }),
-          });
-        }
-        return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
-      })
-      .mockResolvedValueOnce({
-        ok: false,
-        json: async () => ({ success: false, error: { message: '更新に失敗しました' } }),
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true }),
       });
+    });
 
     render(
       <ReservationUpdateModal
@@ -249,20 +372,65 @@ describe.skip('ReservationUpdateModal', () => {
       />
     );
 
-    const submitButton = screen.getByText('変更を保存');
+    await waitFor(() => {
+      expect(screen.getByTestId('submit-button')).toBeInTheDocument();
+    });
+
+    // Get next month
+    const nextButton = screen.getByTestId('next-month-button');
+    fireEvent.click(nextButton);
+
+    // Select day
+    const dayButton = screen.getByTestId('calendar-day-15');
+    fireEvent.click(dayButton);
+
+    // Select time
+    const timeButton = screen.getByTestId('time-slot-10:00');
+    fireEvent.click(timeButton);
+
+    const submitButton = screen.getByTestId('submit-button');
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText('更新に失敗しました')).toBeInTheDocument();
+      expect(screen.getByTestId('error-message')).toBeInTheDocument();
     });
 
+    expect(screen.getByTestId('error-message')).toHaveTextContent('更新に失敗しました');
     expect(mockOnSuccess).not.toHaveBeenCalled();
   });
 
-  it.skip('should disable form while submitting', async () => {
-    (global.fetch as jest.Mock).mockImplementationOnce(
-      () => new Promise((resolve) => setTimeout(resolve, 100))
-    );
+  it('should disable submit button while submitting', async () => {
+    let resolveSubmit: (value: unknown) => void;
+    const submitPromise = new Promise((resolve) => {
+      resolveSubmit = resolve;
+    });
+
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url.includes('/api/menus')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true, data: mockMenus }),
+        });
+      }
+      if (url.includes('/api/staff')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true, data: mockStaff }),
+        });
+      }
+      if (url.includes('/api/reservations/1')) {
+        return submitPromise.then(() =>
+          Promise.resolve({
+            ok: true,
+            json: async () => ({ success: true }),
+          })
+        );
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true }),
+      });
+    });
 
     render(
       <ReservationUpdateModal
@@ -272,16 +440,37 @@ describe.skip('ReservationUpdateModal', () => {
       />
     );
 
-    const submitButton = screen.getByText('変更を保存');
+    await waitFor(() => {
+      expect(screen.getByTestId('submit-button')).toBeInTheDocument();
+    });
+
+    // Get next month
+    const nextButton = screen.getByTestId('next-month-button');
+    fireEvent.click(nextButton);
+
+    // Select day
+    const dayButton = screen.getByTestId('calendar-day-15');
+    fireEvent.click(dayButton);
+
+    // Select time
+    const timeButton = screen.getByTestId('time-slot-10:00');
+    fireEvent.click(timeButton);
+
+    const submitButton = screen.getByTestId('submit-button');
+    const cancelButton = screen.getByTestId('cancel-button');
+
     fireEvent.click(submitButton);
 
     // ボタンがdisabledになることを確認
     expect(submitButton).toBeDisabled();
-    expect(screen.getByText('キャンセル')).toBeDisabled();
-    expect(screen.getByText('保存中...')).toBeInTheDocument();
+    expect(cancelButton).toBeDisabled();
+    expect(screen.getByText('更新中...')).toBeInTheDocument();
+
+    // Resolve the promise
+    resolveSubmit!({});
   });
 
-  it('should validate past dates', async () => {
+  it('should change menu selection', async () => {
     render(
       <ReservationUpdateModal
         reservation={mockReservation}
@@ -290,15 +479,32 @@ describe.skip('ReservationUpdateModal', () => {
       />
     );
 
-    // Wait for form to load
     await waitFor(() => {
-      expect(screen.getByLabelText('予約日')).toBeInTheDocument();
+      expect(screen.getByTestId('menu-select')).toBeInTheDocument();
     });
 
-    const dateInput = screen.getByLabelText('予約日') as HTMLInputElement;
+    const menuSelect = screen.getByTestId('menu-select') as HTMLSelectElement;
+    fireEvent.change(menuSelect, { target: { value: 'menu-2' } });
 
-    // 過去の日付は入力できないことを確認
-    const today = new Date().toISOString().split('T')[0];
-    expect(dateInput.min).toBe(today);
+    expect(menuSelect.value).toBe('menu-2');
+  });
+
+  it('should change staff selection', async () => {
+    render(
+      <ReservationUpdateModal
+        reservation={mockReservation}
+        onClose={mockOnClose}
+        onSuccess={mockOnSuccess}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('staff-select')).toBeInTheDocument();
+    });
+
+    const staffSelect = screen.getByTestId('staff-select') as HTMLSelectElement;
+    fireEvent.change(staffSelect, { target: { value: 'staff-2' } });
+
+    expect(staffSelect.value).toBe('staff-2');
   });
 });

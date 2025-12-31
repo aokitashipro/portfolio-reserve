@@ -178,14 +178,15 @@ export default function ReservationUpdateModal({
   const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 overflow-y-auto" data-testid="reservation-update-modal">
       <div className="w-full max-w-3xl rounded-lg bg-white p-6 shadow-xl my-8">
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">予約変更</h2>
+          <h2 className="text-2xl font-bold text-gray-900" data-testid="modal-title">予約変更</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
             disabled={isSubmitting}
+            data-testid="close-button"
           >
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -194,13 +195,13 @@ export default function ReservationUpdateModal({
         </div>
 
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-800">
+          <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-800" data-testid="error-message">
             {error}
           </div>
         )}
 
         {successMessage && (
-          <div className="mb-4 rounded-lg bg-green-50 p-4 text-green-800">
+          <div className="mb-4 rounded-lg bg-green-50 p-4 text-green-800" data-testid="success-message">
             {successMessage}
           </div>
         )}
@@ -225,10 +226,11 @@ export default function ReservationUpdateModal({
                   }
                 }}
                 className="rounded px-3 py-1 hover:bg-gray-100"
+                data-testid="prev-month-button"
               >
                 ←
               </button>
-              <span className="font-semibold">
+              <span className="font-semibold" data-testid="current-month">
                 {selectedYear}年 {selectedMonth}月
               </span>
               <button
@@ -242,6 +244,7 @@ export default function ReservationUpdateModal({
                   }
                 }}
                 className="rounded px-3 py-1 hover:bg-gray-100"
+                data-testid="next-month-button"
               >
                 →
               </button>
@@ -260,6 +263,7 @@ export default function ReservationUpdateModal({
                   type="button"
                   onClick={() => day && handleSelectDay(day)}
                   disabled={!day || isPastDate(day)}
+                  data-testid={day ? `calendar-day-${day}` : undefined}
                   className={`
                     aspect-square rounded p-2 text-sm
                     ${!day ? 'invisible' : ''}
@@ -276,7 +280,7 @@ export default function ReservationUpdateModal({
 
           {/* 時間帯選択 */}
           {selectedDay && (
-            <div>
+            <div data-testid="time-selection-section">
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 時間を選択
               </label>
@@ -286,6 +290,7 @@ export default function ReservationUpdateModal({
                     key={time}
                     type="button"
                     onClick={() => handleSelectTime(time)}
+                    data-testid={`time-slot-${time}`}
                     className={`
                       rounded px-4 py-2 text-sm
                       ${selectedTime === time ? 'bg-blue-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}
@@ -308,6 +313,7 @@ export default function ReservationUpdateModal({
               value={formData.menuId}
               onChange={(e) => setFormData({ ...formData, menuId: e.target.value })}
               className="w-full rounded-lg border border-gray-300 px-3 py-2"
+              data-testid="menu-select"
               required
             >
               {menus.map((menu) => (
@@ -328,6 +334,7 @@ export default function ReservationUpdateModal({
               value={formData.staffId}
               onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
               className="w-full rounded-lg border border-gray-300 px-3 py-2"
+              data-testid="staff-select"
               required
             >
               {staffList.map((staff) => (
@@ -348,10 +355,11 @@ export default function ReservationUpdateModal({
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               className="w-full rounded-lg border border-gray-300 px-3 py-2"
+              data-testid="notes-input"
               rows={3}
               maxLength={500}
             />
-            <p className="mt-1 text-sm text-gray-500">{formData.notes.length}/500</p>
+            <p className="mt-1 text-sm text-gray-500" data-testid="notes-counter">{formData.notes.length}/500</p>
           </div>
 
           {/* ボタン */}
@@ -362,10 +370,11 @@ export default function ReservationUpdateModal({
               fullWidth
               onClick={onClose}
               disabled={isSubmitting}
+              data-testid="cancel-button"
             >
               キャンセル
             </Button>
-            <Button type="submit" fullWidth disabled={isSubmitting}>
+            <Button type="submit" fullWidth disabled={isSubmitting} data-testid="submit-button">
               {isSubmitting ? '更新中...' : '予約を更新する'}
             </Button>
           </div>
