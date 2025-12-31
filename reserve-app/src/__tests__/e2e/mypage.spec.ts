@@ -288,8 +288,11 @@ test.describe('MyPage - エラーハンドリング', () => {
     await page.goto('/mypage');
     await page.waitForLoadState('networkidle');
 
+    // Wait for loading spinner to disappear
+    await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 });
+
     // Error message should be visible
-    await expect(page.getByText('エラーが発生しました')).toBeVisible();
+    await expect(page.getByText('エラーが発生しました')).toBeVisible({ timeout: 10000 });
 
     // Retry button should be visible
     await expect(page.getByRole('button', { name: '再試行' })).toBeVisible();
@@ -327,8 +330,17 @@ test.describe('MyPage - エラーハンドリング', () => {
     await page.goto('/mypage');
     await page.waitForLoadState('networkidle');
 
+    // Wait for loading spinner to disappear
+    await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 });
+
+    // Error should be visible first
+    await expect(page.getByText('エラーが発生しました')).toBeVisible({ timeout: 10000 });
+
     // Click retry button
     await page.getByRole('button', { name: '再試行' }).click();
+
+    // Wait for loading to complete again
+    await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 });
 
     // Error should disappear
     await expect(page.getByText('エラーが発生しました')).not.toBeVisible();
