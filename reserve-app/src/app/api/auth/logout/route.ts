@@ -1,0 +1,23 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+import { successResponse, errorResponse } from '@/lib/api-response';
+
+/**
+ * POST /api/auth/logout
+ * Sign out the current user
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error('Supabase logout error:', error);
+      return errorResponse('Failed to logout', null, 500);
+    }
+
+    return successResponse({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return errorResponse('Internal server error', null, 500);
+  }
+}
