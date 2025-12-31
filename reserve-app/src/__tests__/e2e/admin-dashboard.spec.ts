@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { setupMSW } from './msw-setup';
 
 /**
  * Feature: 管理者ダッシュボード（統計表示）
@@ -17,6 +18,9 @@ test.describe('管理者ダッシュボード (#15)', () => {
   let dashboardPage: AdminDashboardPage;
 
   test.beforeEach(async ({ page }) => {
+    // MSW API モックをセットアップ
+    await setupMSW(page);
+
     dashboardPage = new AdminDashboardPage(page);
     // TODO: 管理者ログイン処理を実装後に追加（Issue #7）
     // 現在はログイン不要でダッシュボードに直接アクセス
@@ -132,6 +136,17 @@ test.describe('管理者ダッシュボード (#15)', () => {
 
     // And: 各曜日の予約件数に応じたバーが表示される（7本）
     await dashboardPage.expectWeeklyBarsVisible();
+  });
+
+  /**
+   * Scenario: リアルタイム更新
+   *   Given 管理者がダッシュボードにアクセスしている
+   *   When 新しい予約が追加される
+   *   Then ダッシュボードの統計が自動的に更新される
+   */
+  test.skip('リアルタイム更新（将来実装）', async ({ page }) => {
+    // このテストは将来のリアルタイム機能実装時に有効化
+    void page; // Suppress unused variable warning
   });
 
   /**
