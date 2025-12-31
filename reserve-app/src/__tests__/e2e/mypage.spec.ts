@@ -1,381 +1,302 @@
 import { test, expect } from '@playwright/test';
 import { setupMSW } from './msw-setup';
+import { MyPage } from './pages/MyPage';
 
+/**
+ * Feature: マイページ - 予約管理
+ * ユーザーとして予約の確認・変更・キャンセルをしたい
+ */
 test.describe('MyPage - 予約一覧', () => {
+  let myPage: MyPage;
+
   test.beforeEach(async ({ page }) => {
     await setupMSW(page);
-    // Navigate to mypage
-    await page.goto('/mypage');
+    myPage = new MyPage(page);
+    await myPage.goto();
   });
 
-  test('should display mypage with correct title', async ({ page }) => {
-    // Check page title
-    await expect(page.getByRole('heading', { name: 'マイページ', level: 1 })).toBeVisible();
-
-    // Check description
-    await expect(page.getByText('予約の確認・変更・キャンセルができます')).toBeVisible();
+  /**
+   * Scenario: マイページにアクセスする
+   *   Then ページタイトルに「マイページ」が表示される
+   *   And 「予約の確認・変更・キャンセルができます」という説明が表示される
+   */
+  test('should display mypage with correct title', async () => {
+    await myPage.expectPageHeading('マイページ');
+    await myPage.expectDescription();
   });
 
-  test('should display status filter tabs', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-
-    // Check all status tabs are visible
-    await expect(page.getByRole('button', { name: /すべて/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /予約確定/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /予約待ち/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /キャンセル/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /完了/ })).toBeVisible();
+  /**
+   * Scenario: ステータスフィルタタブが表示される
+   */
+  test('should display status filter tabs', async () => {
+    await myPage.waitForLoad();
+    await myPage.expectAllStatusTabsVisible();
   });
 
-  test('should load and display reservations', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-
-    // Wait for loading spinner to disappear
-    await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 });
-
-    // Either reservations should be displayed or empty state
-    const hasReservations = (await page.locator('button:has-text("予約を変更")').count()) > 0;
-    const hasEmptyState = await page.getByText('予約がありません').isVisible();
-
-    expect(hasReservations || hasEmptyState).toBeTruthy();
+  /**
+   * Scenario: 予約一覧が読み込まれる
+   *   When ページの読み込みが完了する
+   *   Then 予約一覧が表示される、または「予約がありません」が表示される
+   */
+  test('should load and display reservations', async () => {
+    await myPage.waitForLoad();
+    await myPage.waitForLoadingComplete();
+    await myPage.expectReservationsOrEmptyState();
   });
 
-  test('should display reservation cards with correct information', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
-    await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 });
-
-    const reservationCards = page.locator('button:has-text("予約を変更")').locator('..');
-
-    if ((await reservationCards.count()) > 0) {
-      const firstCard = reservationCards.first();
-
-      // Check for status badge
-      await expect(firstCard.locator('span.inline-flex')).toBeVisible();
-
-      // Check for menu icon (clipboard icon)
-      await expect(firstCard.locator('svg').first()).toBeVisible();
-
-      // Check for staff icon (user icon)
-      await expect(firstCard.locator('svg').nth(1)).toBeVisible();
-
-      // Check for action buttons
-      await expect(firstCard.getByRole('button', { name: '予約を変更' })).toBeVisible();
-      await expect(firstCard.getByRole('button', { name: 'キャンセル' })).toBeVisible();
-    }
+  /**
+   * Scenario: 予約カードに正しい情報が表示される
+   *   Given 予約が1件以上存在する
+   *   Then 予約カードにステータスバッジが表示される
+   *   And 予約カードにメニューアイコンが表示される
+   *   And 予約カードにスタッフアイコンが表示される
+   *   And 「予約を変更」ボタンが表示される
+   *   And 「キャンセル」ボタンが表示される
+   */
+  test('should display reservation cards with correct information', async () => {
+    await myPage.waitForLoad();
+    await myPage.waitForLoadingComplete();
+    await myPage.expectReservationCardInfo();
   });
 });
 
+/**
+ * Feature: ステータスフィルタリング
+ */
 test.describe('MyPage - ステータスフィルタリング', () => {
+  let myPage: MyPage;
+
   test.beforeEach(async ({ page }) => {
     await setupMSW(page);
-    await page.goto('/mypage');
-    await page.waitForLoadState('networkidle');
-    await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 });
+    myPage = new MyPage(page);
+    await myPage.goto();
+    await myPage.waitForLoad();
+    await myPage.waitForLoadingComplete();
   });
 
-  test('should filter reservations by status', async ({ page }) => {
-    // Click on "予約確定" tab
-    const confirmedTab = page.getByRole('button', { name: /予約確定/ });
-    await confirmedTab.click();
-
-    // Wait for state update
-    await page.waitForTimeout(500);
-
-    // Tab should be active (has blue color)
-    await expect(confirmedTab).toHaveClass(/border-blue-500/);
+  /**
+   * Scenario: ステータスで予約をフィルタリングできる
+   *   When 「予約確定」タブをクリックする
+   *   Then 「予約確定」タブがアクティブになる
+   */
+  test('should filter reservations by status', async () => {
+    await myPage.clickStatusTab('予約確定');
+    await myPage.expectTabActive('予約確定');
   });
 
-  test('should show count for each status', async ({ page }) => {
-    // Check that each tab has a count badge
-    const tabs = page.locator('button:has(span.rounded-full)');
-    const count = await tabs.count();
-
-    expect(count).toBeGreaterThanOrEqual(5); // At least 5 status tabs
+  /**
+   * Scenario: 各ステータスの件数が表示される
+   *   Then 各タブに件数バッジが表示される
+   */
+  test('should show count for each status', async () => {
+    await myPage.expectTabCountBadges();
   });
 
-  test('should display empty state when no reservations match filter', async ({ page }) => {
-    // Click on a status that might have no reservations
-    await page.getByRole('button', { name: /キャンセル/ }).click();
-    await page.waitForTimeout(500);
-
-    // Check if either reservations are shown or empty state
-    const hasReservations = (await page.locator('button:has-text("予約を変更")').count()) > 0;
-    const hasEmptyState =
-      (await page.getByText('キャンセルの予約がありません').isVisible()) ||
-      (await page.getByText('予約がありません').isVisible());
-
-    expect(hasReservations || hasEmptyState).toBeTruthy();
+  /**
+   * Scenario: フィルタ結果が空の場合に空状態が表示される
+   *   When 「キャンセル」タブをクリックする
+   *   And そのステータスの予約が存在しない
+   *   Then 「予約がありません」または「キャンセルの予約がありません」が表示される
+   */
+  test('should display empty state when no reservations match filter', async () => {
+    await myPage.clickStatusTab('キャンセル');
+    await myPage.expectEmptyState('キャンセル');
   });
 });
 
+/**
+ * Feature: 予約変更フロー
+ */
 test.describe('MyPage - 予約変更フロー', () => {
+  let myPage: MyPage;
+
   test.beforeEach(async ({ page }) => {
     await setupMSW(page);
-    await page.goto('/mypage');
-    await page.waitForLoadState('networkidle');
-    await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 });
+    myPage = new MyPage(page);
+    await myPage.goto();
+    await myPage.waitForLoad();
+    await myPage.waitForLoadingComplete();
   });
 
+  /**
+   * Scenario: 予約編集モーダルを開く
+   *   Given 予約が1件以上存在する
+   *   When 「予約を変更」ボタンをクリックする
+   *   Then 「予約変更」というタイトルのモーダルが表示される
+   */
   test('should open edit modal when clicking edit button', async ({ page }) => {
     const editButton = page.getByRole('button', { name: '予約を変更' }).first();
-
     if (await editButton.isVisible()) {
-      await editButton.click();
-
-      // Modal should be visible
-      await expect(page.getByRole('heading', { name: '予約変更' })).toBeVisible();
-
-      // Calendar should be visible
-      await expect(page.getByText('日')).toBeVisible();
-      await expect(page.getByText('月')).toBeVisible();
-
-      // Form fields should be visible
-      await expect(page.locator('select#menu')).toBeVisible();
-      await expect(page.locator('select#staff')).toBeVisible();
-      await expect(page.locator('textarea#notes')).toBeVisible();
-
-      // Submit button should be visible
-      await expect(page.getByRole('button', { name: '予約を更新する' })).toBeVisible();
-    }
-  });
-
-  test('should close edit modal when clicking close button', async ({ page }) => {
-    const editButton = page.getByRole('button', { name: '予約を変更' }).first();
-
-    if (await editButton.isVisible()) {
-      await editButton.click();
-
-      // Modal should be visible
-      await expect(page.getByRole('heading', { name: '予約変更' })).toBeVisible();
-
-      // Click close button
-      const closeButton = page.locator('button:has(svg)').filter({ hasText: '' }).first();
-      await closeButton.click();
-
-      // Modal should be hidden
-      await expect(page.getByRole('heading', { name: '予約変更' })).not.toBeVisible();
-    }
-  });
-
-  test('should have form pre-filled with existing reservation data', async ({ page }) => {
-    const editButton = page.getByRole('button', { name: '予約を変更' }).first();
-
-    if (await editButton.isVisible()) {
-      await editButton.click();
-
-      // Wait for modal to open
-      await page.waitForSelector('select#menu');
-
-      // Menu and staff selects should have values selected
-      const menuSelect = page.locator('select#menu');
-      const menuValue = await menuSelect.inputValue();
-      expect(menuValue).not.toBe('');
-
-      const staffSelect = page.locator('select#staff');
-      const staffValue = await staffSelect.inputValue();
-      expect(staffValue).not.toBe('');
-    }
-  });
-
-  test('should disable past dates in edit modal calendar', async ({ page }) => {
-    const editButton = page.getByRole('button', { name: '予約を変更' }).first();
-
-    if (await editButton.isVisible()) {
-      await editButton.click();
-      await page.waitForTimeout(1000);
-
-      // Find disabled date buttons
-      const disabledDates = page.locator('button:disabled:has-text("1"), button:disabled:has-text("2")');
-      const count = await disabledDates.count();
-
-      // At least some past dates should be disabled (depending on current date)
-      expect(count).toBeGreaterThanOrEqual(0);
+      await myPage.openEditModal();
+      await myPage.expectEditModalVisible();
     }
   });
 
   /**
-   * Scenario: ユーザーが予約のメニューを変更できる
+   * Scenario: 予約編集モーダルを閉じる
+   *   Given 予約編集モーダルを開いている
+   *   When 閉じるボタンをクリックする
+   *   Then モーダルが閉じる
+   */
+  test('should close edit modal when clicking close button', async ({ page }) => {
+    const editButton = page.getByRole('button', { name: '予約を変更' }).first();
+    if (await editButton.isVisible()) {
+      await myPage.openEditModal();
+      await expect(page.getByRole('heading', { name: '予約変更' })).toBeVisible();
+      await myPage.closeEditModal();
+      await myPage.expectEditModalClosed();
+    }
+  });
+
+  /**
+   * Scenario: 予約編集フォームに既存データが事前入力されている
+   *   Given 予約が1件以上存在する
+   *   When 「予約を変更」ボタンをクリックする
+   *   Then メニュー選択に値が入っている
+   *   And スタッフ選択に値が入っている
+   */
+  test('should have form pre-filled with existing reservation data', async ({ page }) => {
+    const editButton = page.getByRole('button', { name: '予約を変更' }).first();
+    if (await editButton.isVisible()) {
+      await myPage.openEditModal();
+      await myPage.expectFormPreFilled();
+    }
+  });
+
+  /**
+   * Scenario: 編集モーダルで過去の日付が無効化される
+   *   Given 予約編集モーダルを開いている
+   *   Then 過去の日付ボタンが無効化されている
+   */
+  test('should disable past dates in edit modal calendar', async ({ page }) => {
+    const editButton = page.getByRole('button', { name: '予約を変更' }).first();
+    if (await editButton.isVisible()) {
+      await myPage.openEditModal();
+      await myPage.expectPastDatesDisabled();
+    }
+  });
+
+  /**
+   * Scenario: 予約のメニューを変更できる
    *   Given 予約編集モーダルを開いている
    *   When 別のメニューを選択する
    *   Then 新しいメニューが選択される
    */
   test('should change menu in edit modal', async ({ page }) => {
     const editButton = page.getByRole('button', { name: '予約を変更' }).first();
-
     if (await editButton.isVisible()) {
-      await editButton.click();
-      await page.waitForSelector('select#menu');
-
-      const menuSelect = page.locator('select#menu');
-      const initialValue = await menuSelect.inputValue();
-
-      // Change menu selection (select second option)
-      await menuSelect.selectOption({ index: 1 });
-
-      const newValue = await menuSelect.inputValue();
-      expect(newValue).not.toBe(initialValue);
+      await myPage.openEditModal();
+      await myPage.changeMenu();
     }
   });
 
   /**
-   * Scenario: ユーザーが予約のスタッフを変更できる
+   * Scenario: 予約のスタッフを変更できる
    *   Given 予約編集モーダルを開いている
    *   When 別のスタッフを選択する
    *   Then 新しいスタッフが選択される
    */
   test('should change staff in edit modal', async ({ page }) => {
     const editButton = page.getByRole('button', { name: '予約を変更' }).first();
-
     if (await editButton.isVisible()) {
-      await editButton.click();
-      await page.waitForSelector('select#staff');
-
-      const staffSelect = page.locator('select#staff');
-      const initialValue = await staffSelect.inputValue();
-
-      // Change staff selection (select second option)
-      await staffSelect.selectOption({ index: 1 });
-
-      const newValue = await staffSelect.inputValue();
-      expect(newValue).not.toBe(initialValue);
+      await myPage.openEditModal();
+      await myPage.changeStaff();
     }
   });
 
   /**
-   * Scenario: ユーザーが備考を編集できる
+   * Scenario: 予約の備考を編集できる
    *   Given 予約編集モーダルを開いている
    *   When 備考欄を編集する
    *   Then 新しい備考が入力される
    */
   test('should edit notes in edit modal', async ({ page }) => {
     const editButton = page.getByRole('button', { name: '予約を変更' }).first();
-
     if (await editButton.isVisible()) {
-      await editButton.click();
-      await page.waitForSelector('textarea#notes');
-
-      const notesTextarea = page.locator('textarea#notes');
-
-      // Clear and enter new notes
-      await notesTextarea.fill('');
-      const newNotes = '新しい要望を追加しました';
-      await notesTextarea.fill(newNotes);
-
-      const value = await notesTextarea.inputValue();
-      expect(value).toBe(newNotes);
+      await myPage.openEditModal();
+      await myPage.editNotes('新しい要望を追加しました');
     }
   });
 });
 
+/**
+ * Feature: 予約キャンセルフロー
+ */
 test.describe('MyPage - 予約キャンセルフロー', () => {
+  let myPage: MyPage;
+
   test.beforeEach(async ({ page }) => {
     await setupMSW(page);
-    await page.goto('/mypage');
-    await page.waitForLoadState('networkidle');
-    await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 });
+    myPage = new MyPage(page);
+    await myPage.goto();
+    await myPage.waitForLoad();
+    await myPage.waitForLoadingComplete();
   });
 
+  /**
+   * Scenario: 予約キャンセル確認ダイアログを開く
+   *   Given 予約が1件以上存在し、キャンセル可能である
+   *   When 「キャンセル」ボタンをクリックする
+   *   Then 「予約をキャンセルしますか？」というダイアログが表示される
+   */
   test('should open cancel confirmation dialog when clicking cancel button', async ({ page }) => {
     const cancelButton = page.getByRole('button', { name: 'キャンセル' }).first();
-
     if (await cancelButton.isVisible() && (await cancelButton.isEnabled())) {
-      await cancelButton.click();
-
-      // Dialog should be visible
-      await expect(page.getByRole('heading', { name: '予約をキャンセルしますか？' })).toBeVisible();
-
-      // Reservation summary should be visible
-      await expect(page.getByText('予約日時')).toBeVisible();
-      await expect(page.getByText('メニュー')).toBeVisible();
-
-      // Warning message should be visible
-      await expect(page.getByText('この操作は取り消せません')).toBeVisible();
-
-      // Action buttons should be visible
-      await expect(page.getByRole('button', { name: '戻る' })).toBeVisible();
-      await expect(page.getByRole('button', { name: 'キャンセルする' })).toBeVisible();
+      await myPage.openCancelDialog();
+      await myPage.expectCancelDialogVisible();
     }
   });
 
+  /**
+   * Scenario: キャンセル確認ダイアログを閉じる
+   *   Given キャンセル確認ダイアログを開いている
+   *   When 「戻る」ボタンをクリックする
+   *   Then ダイアログが閉じる
+   */
   test('should close cancel dialog when clicking back button', async ({ page }) => {
     const cancelButton = page.getByRole('button', { name: 'キャンセル' }).first();
-
     if (await cancelButton.isVisible() && (await cancelButton.isEnabled())) {
-      await cancelButton.click();
-
-      // Dialog should be visible
+      await myPage.openCancelDialog();
       await expect(page.getByRole('heading', { name: '予約をキャンセルしますか？' })).toBeVisible();
-
-      // Click "戻る" button
-      await page.getByRole('button', { name: '戻る' }).click();
-
-      // Dialog should be hidden
-      await expect(
-        page.getByRole('heading', { name: '予約をキャンセルしますか？' })
-      ).not.toBeVisible();
-    }
-  });
-
-  test('should display reservation summary in cancel dialog', async ({ page }) => {
-    const cancelButton = page.getByRole('button', { name: 'キャンセル' }).first();
-
-    if (await cancelButton.isVisible() && (await cancelButton.isEnabled())) {
-      await cancelButton.click();
-
-      // Check that reservation details are displayed
-      await expect(page.getByText('予約日時')).toBeVisible();
-      await expect(page.getByText('メニュー')).toBeVisible();
-      await expect(page.getByText('担当者')).toBeVisible();
-
-      // Check for price and duration format
-      await expect(page.locator('text=/¥[0-9,]+/')).toBeVisible();
-      await expect(page.locator('text=/[0-9]+分/')).toBeVisible();
-    }
-  });
-
-  test('should disable edit and cancel buttons for past reservations', async ({ page }) => {
-    // Look for any disabled action buttons
-    const disabledEditButtons = page.locator('button:disabled:has-text("予約を変更")');
-    const disabledCancelButtons = page.locator('button:disabled:has-text("キャンセル")');
-
-    // Check if there are any disabled buttons (past reservations)
-    const editCount = await disabledEditButtons.count();
-    const cancelCount = await disabledCancelButtons.count();
-
-    // If there are past reservations, buttons should be disabled
-    if (editCount > 0 || cancelCount > 0) {
-      expect(editCount).toEqual(cancelCount); // Both should be disabled for the same reservation
+      await myPage.closeCancelDialog();
+      await myPage.expectCancelDialogClosed();
     }
   });
 
   /**
    * Scenario: キャンセル確認ダイアログで予約の詳細が表示される
-   *   Given キャンセルボタンをクリックしている
-   *   When キャンセル確認ダイアログが表示される
+   *   Given 予約が1件以上存在し、キャンセル可能である
+   *   When 「キャンセル」ボタンをクリックする
    *   Then 予約日時、メニュー名、担当者名、料金、所要時間が表示される
+   */
+  test('should display reservation summary in cancel dialog', async ({ page }) => {
+    const cancelButton = page.getByRole('button', { name: 'キャンセル' }).first();
+    if (await cancelButton.isVisible() && (await cancelButton.isEnabled())) {
+      await myPage.openCancelDialog();
+      await myPage.expectReservationDetailsInDialog();
+    }
+  });
+
+  /**
+   * Scenario: 過去の予約の編集・キャンセルボタンが無効化される
+   *   Given 過去の予約が存在する
+   *   Then 「予約を変更」ボタンが無効化されている
+   *   And 「キャンセル」ボタンが無効化されている
+   */
+  test('should disable edit and cancel buttons for past reservations', async () => {
+    await myPage.expectPastReservationButtonsDisabled();
+  });
+
+  /**
+   * Scenario: キャンセル確認ダイアログで予約の詳細が表示される（完全版）
    */
   test('should show all reservation details in cancel dialog', async ({ page }) => {
     const cancelButton = page.getByRole('button', { name: 'キャンセル' }).first();
-
     if (await cancelButton.isVisible() && (await cancelButton.isEnabled())) {
-      await cancelButton.click();
+      await myPage.openCancelDialog();
       await page.waitForTimeout(500);
-
-      // All expected fields should be visible
-      await expect(page.getByText('予約日時')).toBeVisible();
-      await expect(page.getByText('メニュー')).toBeVisible();
-      await expect(page.getByText('担当者')).toBeVisible();
-
-      // Check for formatted price
-      const priceRegex = /¥[0-9,]+/;
-      await expect(page.locator(`text=${priceRegex}`)).toBeVisible();
-
-      // Check for duration
-      const durationRegex = /[0-9]+分/;
-      await expect(page.locator(`text=${durationRegex}`)).toBeVisible();
-
-      // Check for warning message
-      await expect(page.getByText('この操作は取り消せません')).toBeVisible();
+      await myPage.expectReservationDetailsInDialog();
+      await myPage.expectCancelWarningMessage();
     }
   });
 
@@ -386,23 +307,35 @@ test.describe('MyPage - 予約キャンセルフロー', () => {
    */
   test('should display warning message in cancel dialog', async ({ page }) => {
     const cancelButton = page.getByRole('button', { name: 'キャンセル' }).first();
-
     if (await cancelButton.isVisible() && (await cancelButton.isEnabled())) {
-      await cancelButton.click();
+      await myPage.openCancelDialog();
 
       // Warning icon should be visible
       const warningIcon = page.locator('svg').filter({ has: page.locator('path[stroke-linecap="round"]') }).first();
       await expect(warningIcon).toBeVisible();
 
-      // Warning text should be visible
-      await expect(page.getByText('この操作は取り消せません')).toBeVisible();
+      await myPage.expectCancelWarningMessage();
     }
   });
 });
 
+/**
+ * Feature: エラーハンドリング
+ */
 test.describe('MyPage - エラーハンドリング', () => {
+  let myPage: MyPage;
+
+  /**
+   * Scenario: APIエラー時にエラーメッセージが表示される
+   *   Given APIがエラーを返す
+   *   When マイページにアクセスする
+   *   Then 「エラーが発生しました」というメッセージが表示される
+   *   And 「再試行」ボタンが表示される
+   */
   test('should display error message when API fails', async ({ page }) => {
     await setupMSW(page);
+    myPage = new MyPage(page);
+
     // Intercept API call and return error
     await page.route('**/api/reservations', (route) => {
       route.fulfill({
@@ -415,21 +348,23 @@ test.describe('MyPage - エラーハンドリング', () => {
       });
     });
 
-    await page.goto('/mypage');
-    await page.waitForLoadState('networkidle');
-
-    // Wait for loading spinner to disappear
-    await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 });
-
-    // Error message should be visible
-    await expect(page.getByText('エラーが発生しました')).toBeVisible({ timeout: 10000 });
-
-    // Retry button should be visible
-    await expect(page.getByRole('button', { name: '再試行' })).toBeVisible();
+    await myPage.goto();
+    await myPage.waitForLoad();
+    await myPage.waitForLoadingComplete();
+    await myPage.expectErrorMessageVisible();
   });
 
+  /**
+   * Scenario: エラー時に再試行できる
+   *   Given APIがエラーを返している
+   *   And マイページにアクセスしている
+   *   When 「再試行」ボタンをクリックする
+   *   And 2回目のAPIリクエストが成功する
+   *   Then エラーメッセージが消える
+   */
   test('should retry fetching reservations when clicking retry button', async ({ page }) => {
     await setupMSW(page);
+    myPage = new MyPage(page);
     let requestCount = 0;
 
     // Intercept API calls
@@ -458,69 +393,83 @@ test.describe('MyPage - エラーハンドリング', () => {
       }
     });
 
-    await page.goto('/mypage');
-    await page.waitForLoadState('networkidle');
-
-    // Wait for loading spinner to disappear
-    await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 });
+    await myPage.goto();
+    await myPage.waitForLoad();
+    await myPage.waitForLoadingComplete();
 
     // Error should be visible first
-    await expect(page.getByText('エラーが発生しました')).toBeVisible({ timeout: 10000 });
+    await myPage.expectErrorMessageVisible();
 
     // Click retry button
-    await page.getByRole('button', { name: '再試行' }).click();
+    await myPage.clickRetryButton();
 
     // Wait for loading to complete again
-    await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 });
+    await myPage.waitForLoadingComplete();
 
     // Error should disappear
-    await expect(page.getByText('エラーが発生しました')).not.toBeVisible();
+    await myPage.expectErrorMessageHidden();
   });
 });
 
+/**
+ * Feature: レスポンシブデザイン
+ */
 test.describe('MyPage - レスポンシブデザイン', () => {
+  let myPage: MyPage;
+
+  /**
+   * Scenario: モバイルで正しく表示される
+   *   Given モバイル画面サイズ（375x667）に設定している
+   *   When マイページにアクセスする
+   *   Then タブコンテナがスクロール可能である
+   *   And ページタイトルが表示される
+   */
   test('should display correctly on mobile', async ({ page }) => {
     await setupMSW(page);
-    // Set mobile viewport
-    await page.setViewportSize({ width: 375, height: 667 });
+    myPage = new MyPage(page);
 
-    await page.goto('/mypage');
-    await page.waitForLoadState('networkidle');
-    await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 });
+    await myPage.setMobileViewport();
+    await myPage.goto();
+    await myPage.waitForLoad();
+    await myPage.waitForLoadingComplete();
 
-    // Status tabs should be scrollable
-    const tabsContainer = page.locator('div.overflow-x-auto').first();
-    await expect(tabsContainer).toBeVisible();
-
-    // Page title should be visible
-    await expect(page.getByRole('heading', { name: 'マイページ' })).toBeVisible();
+    await myPage.expectScrollableTabsVisible();
+    await myPage.expectPageHeading('マイページ');
   });
 
+  /**
+   * Scenario: タブレットで正しく表示される
+   *   Given タブレット画面サイズ（768x1024）に設定している
+   *   When マイページにアクセスする
+   *   Then グリッドが2列で表示される
+   */
   test('should display correctly on tablet', async ({ page }) => {
     await setupMSW(page);
-    // Set tablet viewport
-    await page.setViewportSize({ width: 768, height: 1024 });
+    myPage = new MyPage(page);
 
-    await page.goto('/mypage');
-    await page.waitForLoadState('networkidle');
-    await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 });
+    await myPage.setTabletViewport();
+    await myPage.goto();
+    await myPage.waitForLoad();
+    await myPage.waitForLoadingComplete();
 
-    // Grid should use 2 columns on tablet (md:grid-cols-2)
-    const grid = page.locator('div.grid').first();
-    await expect(grid).toBeVisible();
+    await myPage.expectGridVisible();
   });
 
+  /**
+   * Scenario: デスクトップで正しく表示される
+   *   Given デスクトップ画面サイズ（1920x1080）に設定している
+   *   When マイページにアクセスする
+   *   Then グリッドが3列で表示される
+   */
   test('should display correctly on desktop', async ({ page }) => {
     await setupMSW(page);
-    // Set desktop viewport
-    await page.setViewportSize({ width: 1920, height: 1080 });
+    myPage = new MyPage(page);
 
-    await page.goto('/mypage');
-    await page.waitForLoadState('networkidle');
-    await page.waitForSelector('.animate-spin', { state: 'hidden', timeout: 10000 });
+    await myPage.setDesktopViewport();
+    await myPage.goto();
+    await myPage.waitForLoad();
+    await myPage.waitForLoadingComplete();
 
-    // Grid should use 3 columns on desktop (lg:grid-cols-3)
-    const grid = page.locator('div.grid').first();
-    await expect(grid).toBeVisible();
+    await myPage.expectGridVisible();
   });
 });
