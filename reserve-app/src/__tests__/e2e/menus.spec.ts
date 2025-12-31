@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 import { setupMSW } from './msw-setup';
 import { MenusPage } from './pages/MenusPage';
 
