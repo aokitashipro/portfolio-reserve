@@ -80,15 +80,20 @@ export default function MenusPage() {
             <>
               {Object.entries(menusByCategory).map(([category, categoryMenus]) => (
                 <div key={category} className="mb-8">
-                  <h2 className="mb-4 text-2xl font-semibold text-gray-800">{category}</h2>
+                  <h2 className="mb-4 text-2xl font-semibold text-gray-800" data-testid="category-heading">{category}</h2>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {categoryMenus.map((menu) => (
-                      <Card key={menu.id} className="hover:shadow-lg transition-shadow">
+                      <Card
+                        key={menu.id}
+                        className="hover:shadow-lg transition-shadow"
+                        data-testid="menu-card"
+                        data-menu-id={menu.id}
+                      >
                         <div className="flex flex-col h-full">
                           <div className="flex-1">
-                            <h3 className="mb-2 text-xl font-semibold text-gray-900">{menu.name}</h3>
+                            <h3 className="mb-2 text-xl font-semibold text-gray-900" data-testid="menu-name">{menu.name}</h3>
                             {menu.description && (
-                              <p className="mb-4 text-sm text-gray-600">{menu.description}</p>
+                              <p className="mb-4 text-sm text-gray-600" data-testid="menu-description">{menu.description}</p>
                             )}
                           </div>
 
@@ -96,18 +101,18 @@ export default function MenusPage() {
                             <div className="flex items-center justify-between border-t pt-3">
                               <div>
                                 <p className="text-xs text-gray-500">料金</p>
-                                <p className="text-2xl font-bold text-blue-600">
+                                <p className="text-2xl font-bold text-blue-600" data-testid="menu-price">
                                   ¥{menu.price.toLocaleString()}
                                 </p>
                               </div>
                               <div className="text-right">
                                 <p className="text-xs text-gray-500">所要時間</p>
-                                <p className="text-lg font-semibold text-gray-900">{menu.duration}分</p>
+                                <p className="text-lg font-semibold text-gray-900" data-testid="menu-duration">{menu.duration}分</p>
                               </div>
                             </div>
 
                             <Link href={`/booking?menuId=${menu.id}`}>
-                              <Button fullWidth>
+                              <Button fullWidth data-testid="menu-book-button">
                                 このメニューで予約
                               </Button>
                             </Link>

@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   className?: string;
   padding?: 'none' | 'sm' | 'md' | 'lg';
@@ -12,6 +12,7 @@ export default function Card({
   className = '',
   padding = 'md',
   hover = false,
+  ...rest
 }: CardProps) {
   const paddings = {
     none: '',
@@ -27,6 +28,7 @@ export default function Card({
   return (
     <div
       className={`bg-white rounded-lg shadow-sm border border-gray-200 ${paddings[padding]} ${hoverEffect} ${className}`}
+      {...rest}
     >
       {children}
     </div>

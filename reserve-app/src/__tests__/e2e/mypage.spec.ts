@@ -347,6 +347,57 @@ test.describe('MyPage - 予約キャンセルフロー', () => {
       expect(editCount).toEqual(cancelCount); // Both should be disabled for the same reservation
     }
   });
+
+  /**
+   * Scenario: キャンセル確認ダイアログで予約の詳細が表示される
+   *   Given キャンセルボタンをクリックしている
+   *   When キャンセル確認ダイアログが表示される
+   *   Then 予約日時、メニュー名、担当者名、料金、所要時間が表示される
+   */
+  test('should show all reservation details in cancel dialog', async ({ page }) => {
+    const cancelButton = page.getByRole('button', { name: 'キャンセル' }).first();
+
+    if (await cancelButton.isVisible() && (await cancelButton.isEnabled())) {
+      await cancelButton.click();
+      await page.waitForTimeout(500);
+
+      // All expected fields should be visible
+      await expect(page.getByText('予約日時')).toBeVisible();
+      await expect(page.getByText('メニュー')).toBeVisible();
+      await expect(page.getByText('担当者')).toBeVisible();
+
+      // Check for formatted price
+      const priceRegex = /¥[0-9,]+/;
+      await expect(page.locator(`text=${priceRegex}`)).toBeVisible();
+
+      // Check for duration
+      const durationRegex = /[0-9]+分/;
+      await expect(page.locator(`text=${durationRegex}`)).toBeVisible();
+
+      // Check for warning message
+      await expect(page.getByText('この操作は取り消せません')).toBeVisible();
+    }
+  });
+
+  /**
+   * Scenario: キャンセル警告メッセージが表示される
+   *   Given キャンセル確認ダイアログが表示されている
+   *   Then "この操作は取り消せません"という警告が表示される
+   */
+  test('should display warning message in cancel dialog', async ({ page }) => {
+    const cancelButton = page.getByRole('button', { name: 'キャンセル' }).first();
+
+    if (await cancelButton.isVisible() && (await cancelButton.isEnabled())) {
+      await cancelButton.click();
+
+      // Warning icon should be visible
+      const warningIcon = page.locator('svg').filter({ has: page.locator('path[stroke-linecap="round"]') }).first();
+      await expect(warningIcon).toBeVisible();
+
+      // Warning text should be visible
+      await expect(page.getByText('この操作は取り消せません')).toBeVisible();
+    }
+  });
 });
 
 test.describe('MyPage - エラーハンドリング', () => {
