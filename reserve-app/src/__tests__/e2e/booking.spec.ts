@@ -1,154 +1,201 @@
 import { test, expect } from '@playwright/test';
 import { setupMSW } from './msw-setup';
+import { BookingPage } from './pages/BookingPage';
 
+/**
+ * Feature: 予約機能
+ * 詳細なシナリオは reserve-app/features/booking/booking.feature を参照
+ */
 test.describe('Booking Flow', () => {
   test.beforeEach(async ({ page }) => {
     await setupMSW(page);
-    // Navigate to booking page
-    await page.goto('/booking');
   });
 
+  /**
+   * Scenario: 予約ページが正しく表示される
+   */
   test('should display booking page with calendar', async ({ page }) => {
-    // Check page title
-    await expect(page.getByRole('heading', { name: '予約カレンダー' })).toBeVisible();
+    const bookingPage = new BookingPage(page);
 
-    // Check calendar is displayed
-    await expect(page.getByText('日')).toBeVisible();
-    await expect(page.getByText('月')).toBeVisible();
-    await expect(page.getByText('火')).toBeVisible();
+    // Given: 予約ページにアクセスしている
+    await bookingPage.goto();
 
-    // Check booking info sidebar
-    await expect(page.getByRole('heading', { name: '予約情報' })).toBeVisible();
+    // Then: ページタイトル"予約カレンダー"が表示される
+    await bookingPage.expectHeading('予約カレンダー');
+
+    // And: カレンダーが表示される
+    await bookingPage.expectCalendarVisible();
+
+    // And: 予約情報サイドバーが表示される
+    await bookingPage.expectBookingInfoSidebarVisible();
   });
 
+  /**
+   * Scenario: メニューとスタッフがAPIから読み込まれる
+   */
   test('should load menus and staff from API', async ({ page }) => {
-    // Wait for menus to load
-    await page.waitForLoadState('networkidle');
+    const bookingPage = new BookingPage(page);
 
-    // Check that menu select has options
-    const menuSelect = page.locator('select#menu');
-    await expect(menuSelect).toBeVisible();
+    // Given: 予約ページにアクセスしている
+    await bookingPage.goto();
 
-    // Check that staff select has options
-    const staffSelect = page.locator('select#staff');
-    await expect(staffSelect).toBeVisible();
+    // When: ページが読み込まれる
+    await bookingPage.waitForLoad();
+
+    // Then: メニュー選択ドロップダウンが表示される
+    await bookingPage.expectMenuSelectVisible();
+
+    // And: スタッフ選択ドロップダウンが表示される
+    await bookingPage.expectStaffSelectVisible();
   });
 
+  /**
+   * Scenario: 過去の日付が選択できない
+   */
   test('should disable past dates in calendar', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    const bookingPage = new BookingPage(page);
 
-    // Find a past date button (assuming current date is > 1)
-    // This test may need adjustment based on the current date
-    const pastDates = page.locator('button:has-text("1"):disabled, button:has-text("2"):disabled');
-    const count = await pastDates.count();
+    // Given: 予約ページにアクセスしている
+    await bookingPage.goto();
 
-    // At least some past dates should be disabled
-    expect(count).toBeGreaterThanOrEqual(0);
+    // When: ページが読み込まれる
+    await bookingPage.waitForLoad();
+
+    // Then: 過去の日付ボタンが無効化されている
+    await bookingPage.expectPastDatesDisabled();
   });
 
+  /**
+   * Scenario: メニュー選択後に日付を選択すると時間帯が表示される
+   */
   test('should select date and show time slots when menu is selected', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    const bookingPage = new BookingPage(page);
 
-    // Select a menu
-    const menuSelect = page.locator('select#menu');
-    await menuSelect.selectOption({ index: 1 }); // Select first non-empty option
+    // Given: 予約ページにアクセスしている
+    await bookingPage.goto();
+    await bookingPage.waitForLoad();
 
-    // Select a future date (e.g., 15th)
-    const dateButton = page.locator('button:not(:disabled):has-text("15")').first();
-    await dateButton.click();
+    // When: メニューを選択する
+    await bookingPage.selectMenu();
 
-    // Wait for time slots to load
-    await page.waitForTimeout(1000);
+    // And: 未来の日付"15日"を選択する
+    await bookingPage.selectDate('15');
 
-    // Check if time slots section appears
-    const timeSlotsSection = page.getByText('時間帯を選択');
-    await expect(timeSlotsSection).toBeVisible();
+    // And: 1秒待つ
+    await bookingPage.wait(1000);
+
+    // Then: "時間帯を選択"セクションが表示される
+    await bookingPage.expectTimeSlotsVisible();
   });
 
+  /**
+   * Scenario: すべての必須項目を入力すると予約確定ボタンが有効になる
+   */
   test('should enable submit button when all required fields are filled', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    const bookingPage = new BookingPage(page);
 
-    const submitButton = page.getByRole('button', { name: '予約を確定する' });
+    // Given: 予約ページにアクセスしている
+    await bookingPage.goto();
+    await bookingPage.waitForLoad();
 
-    // Initially, button should be disabled
-    await expect(submitButton).toBeDisabled();
+    // When: 予約確定ボタンは初期状態で無効
+    await bookingPage.expectSubmitButtonDisabled();
 
-    // Select menu
-    await page.locator('select#menu').selectOption({ index: 1 });
+    // And: メニューを選択する
+    await bookingPage.selectMenu();
 
-    // Select staff
-    await page.locator('select#staff').selectOption({ index: 1 });
+    // And: スタッフを選択する
+    await bookingPage.selectStaff();
 
-    // Select date
-    await page.locator('button:not(:disabled):has-text("15")').first().click();
+    // And: 未来の日付"15日"を選択する
+    await bookingPage.selectDate('15');
 
-    // Wait for time slots
-    await page.waitForTimeout(1000);
+    // And: 1秒待つ
+    await bookingPage.wait(1000);
 
-    // Select time slot (if available)
-    const availableSlot = page.locator('button:not(:disabled):has-text("10:00"), button:not(:disabled):has-text("14:00")').first();
-    if (await availableSlot.isVisible()) {
-      await availableSlot.click();
+    // And: 利用可能な時間帯を選択する
+    await bookingPage.selectAvailableTimeSlot();
 
-      // Now button should be enabled
-      await expect(submitButton).toBeEnabled();
-    }
+    // Then: "予約を確定する"ボタンが有効になる
+    await bookingPage.expectSubmitButtonEnabled();
   });
 
+  /**
+   * Scenario: 月のナビゲーションが機能する
+   */
   test('should handle month navigation', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    const bookingPage = new BookingPage(page);
 
-    // Get current month text
-    const monthHeader = page.locator('h2.text-xl').first();
-    const currentMonth = await monthHeader.textContent();
+    // Given: 予約ページにアクセスしている
+    await bookingPage.goto();
+    await bookingPage.waitForLoad();
 
-    // Click next month
-    await page.getByRole('button', { name: '次月 →' }).click();
+    // When: 現在の月を記録する
+    const currentMonth = await bookingPage.getCurrentMonth();
 
-    // Month should change
-    const newMonth = await monthHeader.textContent();
-    expect(newMonth).not.toBe(currentMonth);
+    // And: "次月 →"ボタンをクリックする
+    await bookingPage.clickNextMonth();
 
-    // Click previous month
-    await page.getByRole('button', { name: '← 前月' }).click();
+    // Then: 月が変更されている
+    await bookingPage.expectMonthChanged(currentMonth);
 
-    // Should be back to original month
-    const backMonth = await monthHeader.textContent();
-    expect(backMonth).toBe(currentMonth);
+    // When: "← 前月"ボタンをクリックする
+    await bookingPage.clickPreviousMonth();
+
+    // Then: 元の月に戻っている
+    await bookingPage.expectMonthRestored(currentMonth);
   });
 
+  /**
+   * Scenario: 機能セクションが表示される
+   */
   test('should display features section', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    const bookingPage = new BookingPage(page);
 
-    // Check for feature cards
-    await expect(page.getByText('24時間予約OK')).toBeVisible();
-    await expect(page.getByText('確認メール送信')).toBeVisible();
-    await expect(page.getByText('リマインダー')).toBeVisible();
+    // Given: 予約ページにアクセスしている
+    await bookingPage.goto();
+    await bookingPage.waitForLoad();
+
+    // Then: "24時間予約OK"が表示される
+    // And: "確認メール送信"が表示される
+    // And: "リマインダー"が表示される
+    await bookingPage.expectFeaturesVisible();
   });
 
+  /**
+   * Scenario: 備考フィールドが機能する
+   */
   test('should handle notes field', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    const bookingPage = new BookingPage(page);
 
-    const notesField = page.locator('textarea#notes');
-    await expect(notesField).toBeVisible();
+    // Given: 予約ページにアクセスしている
+    await bookingPage.goto();
+    await bookingPage.waitForLoad();
 
-    // Type in notes
-    await notesField.fill('窓際の席を希望します');
+    // Then: 備考フィールドが表示される
+    await bookingPage.expectNotesFieldVisible();
 
-    // Check character counter
-    await expect(page.getByText(/\/500文字/)).toBeVisible();
+    // When: 備考フィールドに"窓際の席を希望します"と入力する
+    await bookingPage.fillNotes('窓際の席を希望します');
+
+    // Then: 文字カウンター"/500文字"が表示される
+    await bookingPage.expectCharacterCounterVisible();
   });
 
+  /**
+   * Scenario: URLパラメータからメニューIDを読み取る
+   */
   test('should pre-select menu from URL parameter', async ({ page }) => {
-    // This test would need a valid menuId
-    // For now, we just check that the parameter is read
-    await page.goto('/booking?menuId=test-menu-id');
-    await page.waitForLoadState('networkidle');
+    const bookingPage = new BookingPage(page);
 
-    // Menu select should be attempted to be set
-    // (may fail if invalid ID, but that's expected)
-    const menuSelect = page.locator('select#menu');
-    await expect(menuSelect).toBeVisible();
+    // Given: クエリパラメータ"menuId=test-menu-id"付きで予約ページにアクセスする
+    await bookingPage.gotoWithQuery('menuId=test-menu-id');
+
+    // When: ページが読み込まれる
+    await bookingPage.waitForLoad();
+
+    // Then: メニュー選択ドロップダウンが表示される
+    await bookingPage.expectMenuSelectVisible();
   });
 });
 
