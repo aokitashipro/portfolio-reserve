@@ -107,9 +107,10 @@ test.describe('管理者ダッシュボード (#15)', () => {
    *   When ページが読み込まれる
    *   Then "本日の予約はありません"というメッセージが表示される
    */
-  test.skip('本日の予約がない場合のメッセージを表示する', async () => {
-    // このテストは将来、APIモックを切り替えて0件データを返す機能実装後に有効化
+  test('本日の予約がない場合のメッセージを表示する', async ({ page }) => {
     // Given: 本日の予約が0件のモックデータ
+    await setupMSW(page, { adminStatsEmpty: true });
+    await dashboardPage.goto();
 
     // Then: 予約がないメッセージが表示される
     await dashboardPage.expectNoReservationsMessage();
@@ -246,12 +247,16 @@ test.describe('管理者ダッシュボード (#15)', () => {
    *   Then "読み込み中..."というメッセージが表示される
    *   And 統計データは表示されない
    */
-  test.skip('ローディング状態を表示する（将来実装）', async () => {
-    // このテストは将来、APIモックの遅延を追加して実装
+  test('ローディング状態を表示する', async ({ page }) => {
     // Given: APIレスポンスが遅延している状態
+    await setupMSW(page, { adminStatsDelay: 3000 }); // 3秒遅延
+    const dashboardPageLocal = new AdminDashboardPage(page);
+
+    // When: ダッシュボードにアクセスする
+    await dashboardPageLocal.goto();
 
     // Then: ローディングメッセージが表示される
-    await dashboardPage.expectLoading();
+    await dashboardPageLocal.expectLoading();
   });
 
   /**
@@ -261,12 +266,16 @@ test.describe('管理者ダッシュボード (#15)', () => {
    *   Then エラーメッセージが赤色の背景で表示される
    *   And 統計データは表示されない
    */
-  test.skip('エラー状態を表示する（将来実装）', async () => {
-    // このテストは将来、APIモックでエラーを返す機能実装後に有効化
+  test('エラー状態を表示する', async ({ page }) => {
     // Given: APIがエラーを返す状態
+    await setupMSW(page, { adminStatsError: true });
+    const dashboardPageLocal = new AdminDashboardPage(page);
+
+    // When: ダッシュボードにアクセスする
+    await dashboardPageLocal.goto();
 
     // Then: エラーメッセージが表示される
-    await dashboardPage.expectError();
+    await dashboardPageLocal.expectError();
   });
 
   /**

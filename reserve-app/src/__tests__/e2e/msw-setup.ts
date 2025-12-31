@@ -7,7 +7,22 @@ import { Page } from '@playwright/test';
  * page.route()を使用して、MSWハンドラーのロジックを再利用します。
  */
 
-export async function setupMSW(page: Page) {
+export interface MSWOptions {
+  /** 管理者統計APIでエラーを返す */
+  adminStatsError?: boolean;
+  /** 管理者統計APIでローディング遅延を追加（ミリ秒） */
+  adminStatsDelay?: number;
+  /** 管理者統計APIで空データを返す */
+  adminStatsEmpty?: boolean;
+  /** 管理者予約一覧APIでエラーを返す */
+  adminReservationsError?: boolean;
+  /** 管理者予約一覧APIで空データを返す */
+  adminReservationsEmpty?: boolean;
+  /** 管理者予約一覧APIで大量データを返す（ページネーション用） */
+  adminReservationsLarge?: boolean;
+}
+
+export async function setupMSW(page: Page, options: MSWOptions = {}) {
   // /api/health のモック
   await page.route('**/api/health', async (route) => {
     await route.fulfill({
@@ -96,6 +111,28 @@ export async function setupMSW(page: Page) {
 
   // /api/admin/stats のモック
   await page.route('**/api/admin/stats**', async (route) => {
+    // オプション: 遅延をシミュレート
+    if (options.adminStatsDelay) {
+      await new Promise(resolve => setTimeout(resolve, options.adminStatsDelay));
+    }
+
+    // オプション: エラーを返す
+    if (options.adminStatsError) {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: false,
+          error: {
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'データの取得に失敗しました',
+          },
+          timestamp: new Date().toISOString(),
+        }),
+      });
+      return;
+    }
+
     const today = new Date();
     const weeklyStats = [];
 
@@ -106,9 +143,46 @@ export async function setupMSW(page: Page) {
       weeklyStats.push({
         date: date.toISOString().split('T')[0],
         day: ['日', '月', '火', '水', '木', '金', '土'][date.getDay()],
-        count: Math.floor(Math.random() * 10) + 5,
+        count: options.adminStatsEmpty ? 0 : Math.floor(Math.random() * 10) + 5,
       });
     }
+
+    // オプション: 空データを返す
+    const todayReservationsList = options.adminStatsEmpty ? [] : [
+      {
+        id: '550e8400-e29b-41d4-a716-446655440101',
+        time: '10:00',
+        customer: '山田太郎',
+        email: 'yamada@example.com',
+        menu: 'カット',
+        staff: '田中太郎',
+        status: 'CONFIRMED',
+        price: 5000,
+        duration: 60,
+      },
+      {
+        id: '550e8400-e29b-41d4-a716-446655440102',
+        time: '11:30',
+        customer: '佐藤花子',
+        email: 'sato@example.com',
+        menu: 'カラー',
+        staff: '佐藤花子',
+        status: 'CONFIRMED',
+        price: 8000,
+        duration: 90,
+      },
+      {
+        id: '550e8400-e29b-41d4-a716-446655440103',
+        time: '14:00',
+        customer: '鈴木一郎',
+        email: 'suzuki@example.com',
+        menu: 'パーマ',
+        staff: '田中太郎',
+        status: 'PENDING',
+        price: 12000,
+        duration: 120,
+      },
+    ];
 
     await route.fulfill({
       status: 200,
@@ -116,45 +190,11 @@ export async function setupMSW(page: Page) {
       body: JSON.stringify({
         success: true,
         data: {
-          todayReservations: 8,
-          monthlyReservations: 156,
-          monthlyRevenue: 1248000,
-          repeatRate: 68,
-          todayReservationsList: [
-            {
-              id: '550e8400-e29b-41d4-a716-446655440101',
-              time: '10:00',
-              customer: '山田太郎',
-              email: 'yamada@example.com',
-              menu: 'カット',
-              staff: '田中太郎',
-              status: 'CONFIRMED',
-              price: 5000,
-              duration: 60,
-            },
-            {
-              id: '550e8400-e29b-41d4-a716-446655440102',
-              time: '11:30',
-              customer: '佐藤花子',
-              email: 'sato@example.com',
-              menu: 'カラー',
-              staff: '佐藤花子',
-              status: 'CONFIRMED',
-              price: 8000,
-              duration: 90,
-            },
-            {
-              id: '550e8400-e29b-41d4-a716-446655440103',
-              time: '14:00',
-              customer: '鈴木一郎',
-              email: 'suzuki@example.com',
-              menu: 'パーマ',
-              staff: '田中太郎',
-              status: 'PENDING',
-              price: 12000,
-              duration: 120,
-            },
-          ],
+          todayReservations: options.adminStatsEmpty ? 0 : 8,
+          monthlyReservations: options.adminStatsEmpty ? 0 : 156,
+          monthlyRevenue: options.adminStatsEmpty ? 0 : 1248000,
+          repeatRate: options.adminStatsEmpty ? 0 : 68,
+          todayReservationsList,
           weeklyStats,
         },
         timestamp: new Date().toISOString(),
@@ -528,6 +568,145 @@ export async function setupMSW(page: Page) {
         timestamp: new Date().toISOString(),
       }),
     });
+  });
+
+  // /api/admin/reservations のモック
+  await page.route('**/api/admin/reservations**', async (route) => {
+    const request = route.request();
+
+    if (request.method() === 'GET') {
+      // オプション: エラーを返す
+      if (options.adminReservationsError) {
+        await route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: false,
+            error: {
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'データの取得に失敗しました',
+            },
+            timestamp: new Date().toISOString(),
+          }),
+        });
+        return;
+      }
+
+      // オプション: 空データを返す
+      if (options.adminReservationsEmpty) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: [],
+            timestamp: new Date().toISOString(),
+          }),
+        });
+        return;
+      }
+
+      // オプション: 大量データを返す（ページネーション用）
+      if (options.adminReservationsLarge) {
+        const largeData = [];
+        for (let i = 1; i <= 25; i++) {
+          const futureDate = new Date();
+          futureDate.setDate(futureDate.getDate() + i);
+          largeData.push({
+            id: `550e8400-e29b-41d4-a716-44665544${String(i).padStart(4, '0')}`,
+            reservedDate: futureDate.toISOString().split('T')[0],
+            reservedTime: `${10 + (i % 8)}:00`,
+            customerName: `顧客${i}`,
+            menuName: ['カット', 'カラー', 'パーマ'][i % 3],
+            staffName: ['田中太郎', '佐藤花子', '鈴木一郎'][i % 3],
+            status: ['CONFIRMED', 'PENDING', 'CONFIRMED'][i % 3] as 'CONFIRMED' | 'PENDING',
+            notes: i % 5 === 0 ? `備考${i}` : undefined,
+          });
+        }
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: largeData,
+            timestamp: new Date().toISOString(),
+          }),
+        });
+        return;
+      }
+
+      // 通常のデータを返す（5件）
+      const futureDate1 = new Date();
+      futureDate1.setDate(futureDate1.getDate() + 7);
+      const futureDate2 = new Date();
+      futureDate2.setDate(futureDate2.getDate() + 10);
+      const futureDate3 = new Date();
+      futureDate3.setDate(futureDate3.getDate() + 14);
+      const futureDate4 = new Date();
+      futureDate4.setDate(futureDate4.getDate() + 21);
+      const futureDate5 = new Date();
+      futureDate5.setDate(futureDate5.getDate() + 28);
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440501',
+              reservedDate: '2025-01-20',
+              reservedTime: '10:00',
+              customerName: '山田太郎',
+              menuName: 'カット',
+              staffName: '田中',
+              status: 'CONFIRMED',
+              notes: 'よろしくお願いします',
+            },
+            {
+              id: '550e8400-e29b-41d4-a716-446655440502',
+              reservedDate: futureDate2.toISOString().split('T')[0],
+              reservedTime: '11:30',
+              customerName: '佐藤花子',
+              menuName: 'カラー',
+              staffName: '佐藤',
+              status: 'PENDING',
+            },
+            {
+              id: '550e8400-e29b-41d4-a716-446655440503',
+              reservedDate: futureDate3.toISOString().split('T')[0],
+              reservedTime: '14:00',
+              customerName: '鈴木一郎',
+              menuName: 'パーマ',
+              staffName: '鈴木',
+              status: 'CONFIRMED',
+            },
+            {
+              id: '550e8400-e29b-41d4-a716-446655440504',
+              reservedDate: futureDate4.toISOString().split('T')[0],
+              reservedTime: '15:30',
+              customerName: '高橋美咲',
+              menuName: 'カット',
+              staffName: '田中',
+              status: 'CONFIRMED',
+            },
+            {
+              id: '550e8400-e29b-41d4-a716-446655440505',
+              reservedDate: futureDate5.toISOString().split('T')[0],
+              reservedTime: '16:00',
+              customerName: '伊藤健太',
+              menuName: 'カラー',
+              staffName: '佐藤',
+              status: 'PENDING',
+            },
+          ],
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    } else {
+      await route.continue();
+    }
   });
 
   console.log('✓ MSW API mocks setup complete for this page');

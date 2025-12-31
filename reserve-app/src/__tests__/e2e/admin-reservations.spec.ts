@@ -86,9 +86,10 @@ test.describe('管理者向け予約管理 (#17, #18)', () => {
    *   Then 「予約がありません」というメッセージが表示される
    *   And 「新規予約を追加」ボタンが表示される
    */
-  test.skip('予約が存在しない場合', async () => {
-    // このテストは将来、APIモックを切り替えて0件データを返す機能実装後に有効化
+  test('予約が存在しない場合', async ({ page }) => {
     // Given: 予約が0件のモックデータ
+    await setupMSW(page, { adminReservationsEmpty: true });
+    await reservationsPage.goto();
 
     // Then: 予約がないメッセージが表示される
     await reservationsPage.expectEmptyMessage('予約がありません');
@@ -437,12 +438,15 @@ test.describe('管理者向け予約管理 (#17, #18)', () => {
    *   When ページが読み込まれる
    *   Then ページネーションが表示される
    */
-  test.skip('予約が多い場合にページネーションが表示される', async () => {
-    // このテストは将来、APIモックで大量データを返す機能実装後に有効化
+  test.skip('予約が多い場合にページネーションが表示される', async ({ page }) => {
+    // ページネーション機能が実装されたら有効化
     // Given: 予約が20件以上のモックデータ
+    await setupMSW(page, { adminReservationsLarge: true });
+    const reservationsPageLocal = new AdminReservationsPage(page);
+    await reservationsPageLocal.goto();
 
     // Then: ページネーションが表示される
-    await reservationsPage.expectPaginationVisible();
+    await reservationsPageLocal.expectPaginationVisible();
   });
 
   // ===== エラーハンドリング =====
@@ -453,11 +457,15 @@ test.describe('管理者向け予約管理 (#17, #18)', () => {
    *   When 予約一覧ページにアクセスする
    *   Then エラーメッセージが表示される
    */
-  test.skip('APIエラー時にエラーメッセージが表示される', async () => {
-    // このテストは将来、APIモックでエラーを返す機能実装後に有効化
+  test('APIエラー時にエラーメッセージが表示される', async ({ page }) => {
     // Given: APIがエラーを返す状態
+    await setupMSW(page, { adminReservationsError: true });
+    const reservationsPageLocal = new AdminReservationsPage(page);
+
+    // When: 予約一覧ページにアクセスする
+    await reservationsPageLocal.goto();
 
     // Then: エラーメッセージが表示される
-    await reservationsPage.expectErrorMessage('エラーが発生しました');
+    await reservationsPageLocal.expectErrorMessage();
   });
 });

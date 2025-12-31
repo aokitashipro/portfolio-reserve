@@ -47,7 +47,7 @@ export default function AdminDashboard() {
       if (result.success) {
         setStats(result.data);
       } else {
-        setError(result.error || 'データの取得に失敗しました');
+        setError(result.error?.message || result.error || 'データの取得に失敗しました');
       }
     } catch (err) {
       setError('ネットワークエラーが発生しました');
