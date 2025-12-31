@@ -78,8 +78,8 @@ test.describe('Booking Flow', () => {
     // When: メニューを選択する
     await bookingPage.selectMenu();
 
-    // And: 未来の日付"15日"を選択する
-    await bookingPage.selectDate('15');
+    // And: 未来の日付"15日"を選択する（次月に移動してから選択）
+    await bookingPage.selectFutureDate('15');
 
     // And: 1秒待つ
     await bookingPage.wait(1000);
@@ -107,8 +107,8 @@ test.describe('Booking Flow', () => {
     // And: スタッフを選択する
     await bookingPage.selectStaff();
 
-    // And: 未来の日付"15日"を選択する
-    await bookingPage.selectDate('15');
+    // And: 未来の日付"15日"を選択する（次月に移動してから選択）
+    await bookingPage.selectFutureDate('15');
 
     // And: 1秒待つ
     await bookingPage.wait(1000);

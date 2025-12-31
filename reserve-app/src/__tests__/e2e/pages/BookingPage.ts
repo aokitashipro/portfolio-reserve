@@ -110,6 +110,18 @@ export class BookingPage {
   }
 
   /**
+   * 利用可能な未来の日付を選択（次月に移動してから選択）
+   */
+  async selectFutureDate(dateText: string = '15') {
+    // 次月に移動
+    await this.clickNextMonth();
+    await this.wait(500); // カレンダーの再描画を待つ
+
+    // 日付を選択
+    await this.selectDate(dateText);
+  }
+
+  /**
    * 利用可能な時間帯を選択
    */
   async selectAvailableTimeSlot() {
