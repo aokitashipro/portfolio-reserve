@@ -111,6 +111,10 @@ model RestaurantSettings {
 
   isPublic Boolean @default(true) @map("is_public") // システム公開・非公開フラグ
 
+  // 予約受付期間設定
+  minAdvanceBookingDays Int @default(0) @map("min_advance_booking_days") // 何日後から予約可能
+  maxAdvanceBookingDays Int @default(90) @map("max_advance_booking_days") // 何日後まで予約可能
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
