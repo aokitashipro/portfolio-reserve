@@ -45,7 +45,7 @@ export interface AvailableSlots {
  */
 export interface CreateReservationRequest {
   menuId: string;
-  staffId: string;
+  staffId?: string | null; // オプショナル（指名なし可）
   reservedDate: string; // "2025-01-20" format
   reservedTime: string; // "14:00" format
   notes?: string;
@@ -68,7 +68,7 @@ export interface UpdateReservationRequest {
 export interface Reservation {
   id: string;
   userId: string;
-  staffId: string;
+  staffId: string | null; // nullable（指名なし可）
   menuId: string;
   reservedDate: string;
   reservedTime: string;
@@ -82,7 +82,7 @@ export interface Reservation {
   staff: {
     id: string;
     name: string;
-  };
+  } | null; // nullable（指名なし可）
   menu: {
     id: string;
     name: string;

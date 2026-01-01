@@ -36,7 +36,7 @@ export default function ReservationEditModal({
   const [selectedDate, setSelectedDate] = useState<Date | null>(initialDate);
   const [selectedTime, setSelectedTime] = useState<string | null>(reservation.reservedTime);
   const [selectedMenuId, setSelectedMenuId] = useState<string>(reservation.menuId);
-  const [selectedStaffId, setSelectedStaffId] = useState<string>(reservation.staffId);
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(reservation.staffId);
   const [notes, setNotes] = useState(reservation.notes || '');
 
   // Fetch menus and staff on mount
@@ -156,7 +156,7 @@ export default function ReservationEditModal({
     }
   };
 
-  const isFormValid = selectedDate && selectedTime && selectedMenuId && selectedStaffId;
+  const isFormValid = selectedDate && selectedTime && selectedMenuId;
 
   const handleSubmit = async () => {
     if (!isFormValid || !selectedDate || !selectedTime) return;
@@ -372,9 +372,9 @@ export default function ReservationEditModal({
                       </label>
                       <select
                         id="staff"
-                        value={selectedStaffId}
+                        value={selectedStaffId || ''}
                         onChange={(e) => {
-                          setSelectedStaffId(e.target.value);
+                          setSelectedStaffId(e.target.value || null);
                           setSelectedTime(null);
                         }}
                         className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"

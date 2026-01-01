@@ -198,7 +198,7 @@ export async function PATCH(
       date: existingReservation.reservedDate.toISOString().split('T')[0],
       time: existingReservation.reservedTime,
       menuName: existingReservation.menu.name,
-      staffName: existingReservation.staff.name,
+      staffName: existingReservation.staff?.name || '指名なし',
     };
 
     const updatedReservation = await prisma.restaurantReservation.update({
@@ -244,7 +244,7 @@ export async function PATCH(
       newDate: formattedReservation.reservedDate,
       newTime: formattedReservation.reservedTime,
       newMenuName: formattedReservation.menu.name,
-      newStaffName: formattedReservation.staff.name,
+      newStaffName: formattedReservation.staff?.name || '指名なし',
     }).catch((error) => {
       console.error('Failed to send update email:', error);
     });
@@ -358,7 +358,7 @@ export async function DELETE(
       date: formattedReservation.reservedDate,
       time: formattedReservation.reservedTime,
       menuName: formattedReservation.menu.name,
-      staffName: formattedReservation.staff.name,
+      staffName: formattedReservation.staff?.name || '指名なし',
       cancellationReason,
     }).catch((error) => {
       console.error('Failed to send cancellation email:', error);

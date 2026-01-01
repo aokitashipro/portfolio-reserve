@@ -94,7 +94,7 @@ export default function CancellationDialog({
           </p>
           <p>
             <span className="text-gray-600">担当:</span>{' '}
-            <span className="font-medium text-gray-900">{reservation.staff.name}</span>
+            <span className="font-medium text-gray-900">{reservation.staff?.name || '指名なし'}</span>
           </p>
         </div>
 
