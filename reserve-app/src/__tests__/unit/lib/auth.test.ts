@@ -26,8 +26,8 @@ describe('認証バリデーションスキーマ', () => {
         name: '山田太郎',
         email: 'test@example.com',
         phone: '090-1234-5678',
-        password: 'password123',
-        passwordConfirm: 'password123',
+        password: 'Password123!',
+        passwordConfirm: 'Password123!',
         termsAccepted: true,
       };
 
@@ -42,8 +42,8 @@ describe('認証バリデーションスキーマ', () => {
         name: '山田太郎',
         email: 'test@example.com',
         phone: '090-1234-5678',
-        password: 'password123',
-        passwordConfirm: 'differentpass',
+        password: 'Password123!',
+        passwordConfirm: 'DifferentPass456!',
         termsAccepted: true,
       };
 
