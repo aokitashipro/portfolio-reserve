@@ -93,6 +93,11 @@ model RestaurantReservation {
   @@index([tenantId])
   @@index([userId])
   @@index([reservedDate])
+  // 複合インデックス（パフォーマンス最適化）
+  @@index([tenantId, userId]) // ユーザーの予約一覧
+  @@index([tenantId, staffId, reservedDate]) // スタッフの予約状況
+  @@index([tenantId, status]) // ステータス別予約取得
+  @@index([staffId, reservedDate, status]) // スタッフの空き状況確認
   @@map("restaurant_reservations")
 }
 
@@ -114,6 +119,9 @@ model RestaurantSettings {
   // 予約受付期間設定
   minAdvanceBookingDays Int @default(0) @map("min_advance_booking_days") // 何日後から予約可能
   maxAdvanceBookingDays Int @default(90) @map("max_advance_booking_days") // 何日後まで予約可能
+
+  // キャンセル期限設定
+  cancellationDeadlineHours Int @default(24) @map("cancellation_deadline_hours") // 予約日の何時間前までキャンセル可能
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
