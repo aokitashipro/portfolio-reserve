@@ -93,6 +93,11 @@ model RestaurantReservation {
   @@index([tenantId])
   @@index([userId])
   @@index([reservedDate])
+  // 複合インデックス（パフォーマンス最適化）
+  @@index([tenantId, userId]) // ユーザーの予約一覧
+  @@index([tenantId, staffId, reservedDate]) // スタッフの予約状況
+  @@index([tenantId, status]) // ステータス別予約取得
+  @@index([staffId, reservedDate, status]) // スタッフの空き状況確認
   @@map("restaurant_reservations")
 }
 
