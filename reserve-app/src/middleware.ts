@@ -51,14 +51,61 @@ async function getPublicStatus(request: NextRequest): Promise<boolean> {
 }
 
 /**
+ * CSRF保護
+ * POSTリクエストのoriginとhostを検証
+ */
+function validateCSRF(request: NextRequest): NextResponse | null {
+  const { pathname } = request.nextUrl;
+
+  // API routes以外はスキップ
+  if (!pathname.startsWith('/api/')) {
+    return null;
+  }
+
+  // GETリクエストはスキップ
+  if (request.method !== 'POST' && request.method !== 'PUT' && request.method !== 'PATCH' && request.method !== 'DELETE') {
+    return null;
+  }
+
+  const origin = request.headers.get('origin');
+  const host = request.headers.get('host');
+
+  // originヘッダーが存在しない場合（例：サーバー間通信）はスキップ
+  if (!origin) {
+    return null;
+  }
+
+  // originとhostが一致するかチェック
+  // 例: origin = "https://example.com", host = "example.com"
+  const originHost = new URL(origin).host;
+  if (originHost !== host) {
+    console.warn('[CSRF] Blocked request from different origin:', { origin: originHost, host });
+    return NextResponse.json(
+      { error: 'CSRF validation failed' },
+      { status: 403 }
+    );
+  }
+
+  // 検証成功
+  return null;
+}
+
+/**
  * ミドルウェア
- * システム非公開時は一般ユーザーをメンテナンス画面にリダイレクト
- * 管理画面（/admin/*）は常にアクセス可能
+ * 1. CSRF保護（POSTリクエスト時のorigin検証）
+ * 2. システム非公開時は一般ユーザーをメンテナンス画面にリダイレクト
+ * 3. 管理画面（/admin/*）は常にアクセス可能
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 除外パス（これらのパスはチェックをスキップ）
+  // 1. CSRF保護チェック（最優先）
+  const csrfResponse = validateCSRF(request);
+  if (csrfResponse) {
+    return csrfResponse;
+  }
+
+  // 除外パス（これらのパスは公開状態チェックをスキップ）
   const excludedPaths = [
     '/api/',
     '/_next/',
@@ -74,7 +121,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 公開状態チェック
+  // 2. 公開状態チェック
   const isPublic = await getPublicStatus(request);
 
   if (!isPublic) {
