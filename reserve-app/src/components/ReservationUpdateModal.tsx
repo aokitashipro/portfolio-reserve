@@ -327,16 +327,16 @@ export default function ReservationUpdateModal({
           {/* スタッフ選択 */}
           <div>
             <label htmlFor="staff" className="mb-1 block text-sm font-medium text-gray-700">
-              担当スタッフ
+              担当スタッフ（任意）
             </label>
             <select
               id="staff"
-              value={formData.staffId}
-              onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
+              value={formData.staffId || ''}
+              onChange={(e) => setFormData({ ...formData, staffId: e.target.value || null })}
               className="w-full rounded-lg border border-gray-300 px-3 py-2"
               data-testid="staff-select"
-              required
             >
+              <option value="">指定なし</option>
               {staffList.map((staff) => (
                 <option key={staff.id} value={staff.id}>
                   {staff.name}

@@ -114,7 +114,7 @@ export default function ReservationCard({
                 </svg>
                 <div>
                   <p className="text-sm text-gray-500">担当</p>
-                  <p className="font-medium text-gray-900">{reservation.staff.name}</p>
+                  <p className="font-medium text-gray-900">{reservation.staff?.name || '指名なし'}</p>
                 </div>
               </div>
 
