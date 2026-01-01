@@ -1,7 +1,17 @@
 # GitHub Issues 一覧
 
-このドキュメントは、GitHub Issueとして登録すべき機能の完全リストです。
-以下の順序で登録することを推奨します。
+**最終更新**: 2026-01-01
+
+このドキュメントは、GitHub Issueの完全リストと進捗状況を管理するドキュメントです。
+
+## 📊 進捗サマリー
+
+- **実装済み (CLOSED)**: 44件 (81.5%)
+- **未実装 (OPEN)**: 11件 (18.5%)
+- **合計**: 54件
+
+**Phase 1（基本機能）完了率**: 100% ✅
+**Phase 2（拡張機能）完了率**: 75%
 
 ---
 
@@ -27,9 +37,9 @@ GitHubリポジトリで以下のラベルを作成してください：
 
 ---
 
-## 📦 Sprint 1: 基盤構築（Week 1）
+## 📦 Sprint 1: 基盤構築 ✅ 完了
 
-### #1 [FEATURE] テスト環境セットアップ
+### #1 [FEATURE] テスト環境セットアップ ✅ CLOSED
 **Labels**: `feature`, `test`, `sprint-1`, `priority-high`
 
 **概要**: Jest, React Testing Library, Playwrightのセットアップ
@@ -65,7 +75,7 @@ Feature: テスト環境構築
 
 ---
 
-### #2 [FEATURE] Prisma + Supabaseセットアップ
+### #2 [FEATURE] Prisma + Supabaseセットアップ ✅ CLOSED
 **Labels**: `feature`, `sprint-1`, `priority-high`
 
 **概要**: Prismaのセットアップとデータベース接続
@@ -118,7 +128,7 @@ model RestaurantUser {
 
 ---
 
-### #3 [FEATURE] 環境変数管理
+### #3 [FEATURE] 環境変数管理 ✅ CLOSED
 **Labels**: `feature`, `sprint-1`, `priority-high`
 
 **概要**: .env.local, .env.exampleの整備
@@ -130,7 +140,7 @@ model RestaurantUser {
 
 ---
 
-### #4 [FEATURE] CI/CD構築（GitHub Actions）
+### #4 [FEATURE] CI/CD構築（GitHub Actions） ✅ CLOSED
 **Labels**: `feature`, `sprint-1`, `priority-high`
 
 **概要**: 自動テスト・デプロイのワークフロー構築
@@ -142,7 +152,7 @@ model RestaurantUser {
 
 ---
 
-### #5 [FEATURE] ユーザー新規登録機能
+### #5 [FEATURE] ユーザー新規登録機能 ✅ CLOSED
 **Labels**: `feature`, `sprint-1`, `priority-high`
 
 **ユーザーストーリー**:
@@ -175,7 +185,7 @@ Feature: ユーザー新規登録
 
 ---
 
-### #6 [FEATURE] ユーザーログイン機能
+### #6 [FEATURE] ユーザーログイン機能 ✅ CLOSED
 **Labels**: `feature`, `sprint-1`, `priority-high`
 
 **ユーザーストーリー**:
@@ -207,7 +217,7 @@ Feature: ユーザーログイン
 
 ---
 
-### #7 [FEATURE] 管理者ログイン機能
+### #7 [FEATURE] 管理者ログイン機能 ✅ CLOSED
 **Labels**: `feature`, `sprint-1`, `priority-high`
 
 **ユーザーストーリー**:
@@ -237,9 +247,9 @@ Feature: 管理者ログイン
 
 ---
 
-## 📦 Sprint 2: 予約機能（ユーザー側）（Week 2）
+## 📦 Sprint 2: 予約機能（ユーザー側） ✅ 完了
 
-### #8 [FEATURE] メニュー一覧表示
+### #8 [FEATURE] メニュー一覧表示 ✅ CLOSED
 **Labels**: `feature`, `sprint-2`, `priority-high`
 
 **ユーザーストーリー**:
@@ -262,7 +272,7 @@ Feature: メニュー一覧表示
 
 ---
 
-### #9 [FEATURE] 予約カレンダー（空き状況表示）
+### #9 [FEATURE] 予約カレンダー（空き状況表示） ✅ CLOSED
 **Labels**: `feature`, `sprint-2`, `priority-high`
 
 **ユーザーストーリー**:
@@ -291,7 +301,7 @@ Feature: 予約カレンダー
 
 ---
 
-### #10 [FEATURE] 予約登録機能
+### #10 [FEATURE] 予約登録機能 ✅ CLOSED
 **Labels**: `feature`, `sprint-2`, `priority-high`
 
 **ユーザーストーリー**:
@@ -323,7 +333,7 @@ Feature: 予約登録
 
 ---
 
-### #11 [FEATURE] 予約確認メール送信
+### #11 [FEATURE] 予約確認メール送信 ✅ CLOSED
 **Labels**: `feature`, `sprint-2`, `priority-high`
 
 **ユーザーストーリー**:
@@ -340,7 +350,7 @@ So that I have a record of my reservation
 
 ---
 
-### #12 [FEATURE] マイページ（予約一覧）
+### #12 [FEATURE] マイページ（予約一覧） ✅ CLOSED
 **Labels**: `feature`, `sprint-2`, `priority-medium`
 
 **ユーザーストーリー**:
@@ -362,7 +372,7 @@ Feature: マイページ
 
 ---
 
-### #13 [FEATURE] 予約変更機能
+### #13 [FEATURE] 予約変更機能 ✅ CLOSED
 **Labels**: `feature`, `sprint-2`, `priority-medium`
 
 **ユーザーストーリー**:
@@ -387,7 +397,7 @@ Feature: 予約変更
 
 ---
 
-### #14 [FEATURE] 予約キャンセル機能
+### #14 [FEATURE] 予約キャンセル機能 ✅ CLOSED
 **Labels**: `feature`, `sprint-2`, `priority-medium`
 
 **ユーザーストーリー**:
@@ -411,9 +421,9 @@ Feature: 予約キャンセル
 
 ---
 
-## 📦 Sprint 3: 管理機能（店舗側）（Week 3）
+## 📦 Sprint 3: 管理機能（店舗側） ⚠️ 一部未完了
 
-### #15 [FEATURE] 管理者ダッシュボード（統計表示）
+### #15 [FEATURE] 管理者ダッシュボード（統計表示） ✅ CLOSED
 **Labels**: `feature`, `sprint-3`, `priority-high`
 
 **ユーザーストーリー**:
@@ -437,7 +447,7 @@ Feature: ダッシュボード
 
 ---
 
-### #16 [FEATURE] 予約一覧表示（管理者）
+### #16 [FEATURE] 予約一覧表示（管理者） ✅ CLOSED
 **Labels**: `feature`, `sprint-3`, `priority-high`
 
 **ユーザーストーリー**:
@@ -459,7 +469,7 @@ Feature: 予約一覧（管理者）
 
 ---
 
-### #17 [FEATURE] 予約手動追加（管理者）
+### #17 [FEATURE] 予約手動追加（管理者） ✅ CLOSED
 **Labels**: `feature`, `sprint-3`, `priority-high`
 
 **ユーザーストーリー**:
@@ -471,12 +481,12 @@ So that I can handle phone bookings
 
 ---
 
-### #18 [FEATURE] 予約編集・削除（管理者）
+### #18 [FEATURE] 予約編集・削除（管理者） ✅ CLOSED
 **Labels**: `feature`, `sprint-3`, `priority-high`
 
 ---
 
-### #19 [FEATURE] 顧客管理（一覧・詳細）
+### #19 [FEATURE] 顧客管理（一覧・詳細） ⚠️ OPEN
 **Labels**: `feature`, `sprint-3`, `priority-medium`
 
 **ユーザーストーリー**:
@@ -486,36 +496,45 @@ I want to view customer information
 So that I can provide personalized service
 ```
 
+**実装タスク**:
+- [ ] 顧客一覧ページ作成
+- [ ] 顧客詳細ページ作成
+- [ ] 来店履歴表示機能
+
 ---
 
-### #20 [FEATURE] 顧客メモ機能
+### #20 [FEATURE] 顧客メモ機能 ⚠️ OPEN
+**Labels**: `feature`, `sprint-3`, `priority-medium`
+
+**実装タスク**:
+- [ ] 顧客メモCRUD機能
+- [ ] メモ表示UI
+
+---
+
+### #21 [FEATURE] スタッフ管理（CRUD） ✅ CLOSED
 **Labels**: `feature`, `sprint-3`, `priority-medium`
 
 ---
 
-### #21 [FEATURE] スタッフ管理（CRUD）
+### #22 [FEATURE] スタッフシフト設定 ✅ CLOSED
 **Labels**: `feature`, `sprint-3`, `priority-medium`
 
 ---
 
-### #22 [FEATURE] スタッフシフト設定
-**Labels**: `feature`, `sprint-3`, `priority-medium`
+## 📦 Sprint 4: 拡張機能 ⚠️ 一部未完了
 
----
-
-## 📦 Sprint 4: 拡張機能（Week 4）
-
-### #23 [FEATURE] メニュー管理（CRUD）
+### #23 [FEATURE] メニュー管理（CRUD） ✅ CLOSED
 **Labels**: `feature`, `sprint-4`, `priority-medium`
 
 ---
 
-### #24 [FEATURE] 店舗設定（営業時間・定休日）
+### #24 [FEATURE] 店舗設定（営業時間・定休日） ✅ CLOSED
 **Labels**: `feature`, `sprint-4`, `priority-medium`
 
 ---
 
-### #25 [FEATURE] リマインダーメール自動送信
+### #25 [FEATURE] リマインダーメール自動送信 ✅ CLOSED
 **Labels**: `feature`, `sprint-4`, `priority-medium`
 
 **ユーザーストーリー**:
@@ -532,34 +551,213 @@ So that I don't forget my reservation
 
 ---
 
-### #26 [FEATURE] 分析レポート（予約推移）
+### #26 [FEATURE] 分析レポート（予約推移） ⚠️ OPEN
 **Labels**: `feature`, `sprint-4`, `priority-low`
+
+**実装タスク**:
+- [ ] 予約件数推移グラフ（日別/週別/月別）
+- [ ] グラフ表示UI（Chart.js or Recharts）
 
 ---
 
-### #27 [FEATURE] リピート率分析
+### #27 [FEATURE] リピート率分析 ⚠️ OPEN
 **Labels**: `feature`, `sprint-4`, `priority-low`
+
+**実装タスク**:
+- [ ] リピート率計算ロジック
+- [ ] 分析結果表示UI
 
 ---
 
-### #28 [TEST] E2Eテスト拡充
+### #28 [TEST] E2Eテスト拡充 ✅ CLOSED
 **Labels**: `test`, `sprint-4`, `priority-medium`
 
 **概要**: 全主要フローのE2Eテストカバレッジ100%達成
 
 ---
 
-### #29 [REFACTOR] コンポーネント整理
+### #29 [REFACTOR] コンポーネント整理 ⚠️ OPEN
 **Labels**: `refactor`, `tech-debt`, `sprint-4`
 
 **概要**: 重複コードの削減、コンポーネントの分割
 
+**実装タスク**:
+- [ ] 共通コンポーネントの抽出
+- [ ] コンポーネント分割
+- [ ] 重複コード削減
+
 ---
 
-### #30 [DOCS] API仕様書作成
+### #30 [DOCS] API仕様書作成 ⚠️ OPEN (実質完了)
 **Labels**: `docs`, `sprint-4`, `priority-low`
 
 **概要**: 全APIエンドポイントの仕様書作成（OpenAPI or Markdown）
+
+**補足**: `documents/api/API設計書.md` として既に作成済み（最終更新: 2026-01-01）。Issueクローズを推奨。
+
+---
+
+## 📦 Sprint 5: テスト品質向上（Page Objectパターン移行） ✅ 完了
+
+### #43 [TEST] 予約機能のGherkin featureファイルとPage Object作成 ✅ CLOSED
+**Labels**: `test`, `priority-high`
+
+**概要**: 予約機能のBDD仕様とPage Objectパターン実装
+
+---
+
+### #44 [REFACTOR] booking.spec.tsをPage Objectパターンに移行 ✅ CLOSED
+**Labels**: `refactor`, `test`, `priority-high`
+
+---
+
+### #45 [TEST] マイページのGherkin featureファイルとPage Object作成 ✅ CLOSED
+**Labels**: `test`, `priority-high`
+
+---
+
+### #46 [REFACTOR] mypage.spec.tsをPage Objectパターンに移行 ✅ CLOSED
+**Labels**: `refactor`, `test`, `priority-high`
+
+---
+
+### #47 [TEST] メニュー一覧のGherkin featureファイルとPage Object作成 ✅ CLOSED
+**Labels**: `test`, `priority-medium`
+
+---
+
+### #48 [REFACTOR] menus.spec.tsをPage Objectパターンに移行 ✅ CLOSED
+**Labels**: `refactor`, `test`, `priority-medium`
+
+---
+
+### #49 [TEST] ホームページのGherkin featureファイルとPage Object作成 ✅ CLOSED
+**Labels**: `test`, `priority-medium`
+
+---
+
+### #50 [REFACTOR] home.spec.tsをPage Objectパターンに移行 ✅ CLOSED
+**Labels**: `refactor`, `test`, `priority-medium`
+
+---
+
+## 📦 Sprint 6: セキュリティ強化 ⚠️ 一部未完了
+
+### #62 【セキュリティ】セキュリティヘッダーの追加 ✅ CLOSED
+**Labels**: `feature`, `security`, `priority-high`
+
+**概要**: CSP, X-Frame-Options等のセキュリティヘッダー実装
+
+---
+
+### #63 【セキュリティ】APIエンドポイントへのレート制限実装 ✅ CLOSED
+**Labels**: `feature`, `security`, `priority-high`
+
+**概要**: Upstash Redisを使用したレート制限機能
+
+---
+
+### #64 【セキュリティ】CSRF保護の強化 ✅ CLOSED
+**Labels**: `feature`, `security`, `priority-high`
+
+---
+
+### #65 【セキュリティ】パスワードポリシーの強化 ✅ CLOSED
+**Labels**: `feature`, `security`, `priority-high`
+
+**概要**: 8文字以上、英数字必須のパスワードポリシー実装
+
+---
+
+### #66 【セキュリティ】Next.js middlewareによる認証チェック実装 ✅ CLOSED
+**Labels**: `feature`, `security`, `priority-high`
+
+**概要**: middleware.tsによる認証ルート保護
+
+---
+
+### #67 【セキュリティ】セキュリティイベントのログ記録実装 ⚠️ OPEN
+**Labels**: `feature`, `security`, `priority-medium`
+
+**実装タスク**:
+- [ ] ログイン試行ログ
+- [ ] 不正アクセス検知ログ
+- [ ] セキュリティイベント監視
+
+---
+
+## 📦 Sprint 7: パフォーマンス最適化 ⚠️ 一部未完了
+
+### #68 【パフォーマンス】N+1問題の修正（admin/stats API） ✅ CLOSED
+**Labels**: `performance`, `priority-high`
+
+**概要**: 統計API のN+1クエリ問題を修正
+
+---
+
+### #69 【パフォーマンス】複合インデックスの追加 ✅ CLOSED
+**Labels**: `performance`, `priority-high`
+
+**概要**: Prismaスキーマに複合インデックスを追加してクエリ最適化
+
+---
+
+### #70 【パフォーマンス】トランザクションの実装 ⚠️ OPEN
+**Labels**: `performance`, `priority-medium`
+
+**実装タスク**:
+- [ ] 予約作成時のトランザクション処理
+- [ ] データ整合性の保証
+
+---
+
+### #71 【パフォーマンス】検索フィルターのDB最適化 ⚠️ OPEN
+**Labels**: `performance`, `priority-medium`
+
+**実装タスク**:
+- [ ] 予約検索クエリの最適化
+- [ ] インデックス活用の見直し
+
+---
+
+## 📦 Sprint 8: ドキュメント・設定機能拡張 ⚠️ 一部未完了
+
+### #75 docs: プロジェクトドキュメントを拡充 ✅ CLOSED
+**Labels**: `docs`, `priority-medium`
+
+**概要**: 事業展開戦略、ポートフォリオ完成ロードマップ等のドキュメント作成
+
+---
+
+### #77 【設定機能】スタッフ指名機能のON/OFF設定 ⚠️ OPEN
+**Labels**: `feature`, `settings`, `priority-low`
+
+**実装タスク**:
+- [ ] 設定画面にトグルスイッチ追加
+- [ ] スタッフ指名フィールドの表示/非表示制御
+
+---
+
+### #78 【設定機能】スタッフシフト管理のON/OFF設定 ⚠️ OPEN
+**Labels**: `feature`, `settings`, `priority-low`
+
+**実装タスク**:
+- [ ] 設定画面にトグルスイッチ追加
+- [ ] シフト管理機能の有効/無効制御
+
+---
+
+### #79 【設定機能】予約受付期間の設定（何日前〜何日後） ✅ CLOSED
+**Labels**: `feature`, `settings`, `priority-high`
+
+**概要**: 予約可能期間の設定機能（最小/最大予約可能日数）
+
+---
+
+### #80 【設定機能】キャンセル期限の設定（予約日の何時間前まで） ✅ CLOSED
+**Labels**: `feature`, `settings`, `priority-high`
+
+**概要**: キャンセル可能期限の設定機能
 
 ---
 
@@ -593,16 +791,50 @@ GitHub Projects で Sprint ごとのカンバンボードを作成
 
 ### GitHub Projects（カンバンボード）
 ```
-Backlog → Sprint 1 → In Progress → Review → Done
+Backlog → In Progress → Review → Done
 ```
 
-### マイルストーン
-- Sprint 1: Week 1 (1/15 - 1/22)
-- Sprint 2: Week 2 (1/23 - 1/29)
-- Sprint 3: Week 3 (1/30 - 2/5)
-- Sprint 4: Week 4 (2/6 - 2/12)
+### Sprint別完了状況
+
+| Sprint | 状態 | 完了率 |
+|--------|------|--------|
+| Sprint 1: 基盤構築 | ✅ 完了 | 100% (7/7) |
+| Sprint 2: 予約機能（ユーザー側） | ✅ 完了 | 100% (7/7) |
+| Sprint 3: 管理機能（店舗側） | ⚠️ 一部未完了 | 83% (5/6) |
+| Sprint 4: 拡張機能 | ⚠️ 一部未完了 | 60% (3/5) |
+| Sprint 5: テスト品質向上 | ✅ 完了 | 100% (8/8) |
+| Sprint 6: セキュリティ強化 | ⚠️ 一部未完了 | 83% (5/6) |
+| Sprint 7: パフォーマンス最適化 | ⚠️ 一部未完了 | 50% (2/4) |
+| Sprint 8: ドキュメント・設定機能拡張 | ⚠️ 一部未完了 | 60% (3/5) |
+
+### 未完了Issue一覧（優先順位順）
+
+**優先度: 中〜高**
+- #19: 顧客管理（一覧・詳細）
+- #20: 顧客メモ機能
+- #67: セキュリティイベントのログ記録実装
+- #70: トランザクションの実装
+- #71: 検索フィルターのDB最適化
+
+**優先度: 低**
+- #26: 分析レポート（予約推移）
+- #27: リピート率分析
+- #29: コンポーネント整理
+- #30: API仕様書作成（実質完了）
+- #77: スタッフ指名機能のON/OFF設定
+- #78: スタッフシフト管理のON/OFF設定
 
 ---
 
-次は、このリストをもとにGitHubに実際にIssueを登録しますか？
-それとも、先にテスト環境のセットアップから始めますか？
+## 🎯 次のステップ
+
+### 推奨タスク優先順位
+1. **Issue #30をクローズ**: API設計書は既に完成
+2. **顧客管理機能の実装** (#19, #20): ポートフォリオ価値向上
+3. **分析レポート機能の実装** (#26, #27): データ可視化スキルのアピール
+4. **パフォーマンス強化** (#70, #71): システムの完成度向上
+5. **コンポーネント整理** (#29): 技術的負債の解消
+
+---
+
+**最終更新**: 2026-01-01
