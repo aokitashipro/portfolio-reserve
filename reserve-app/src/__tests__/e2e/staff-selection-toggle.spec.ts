@@ -85,14 +85,24 @@ test.describe('Issue #77: スタッフ指名機能のON/OFF設定', () => {
     const tomorrowDay = tomorrow.getDate();
     await page.click(`[data-day="${tomorrowDay}"]`);
 
-    // 時間選択
-    await page.waitForSelector('[data-testid="time-slot"]');
-    await page.click('[data-testid="time-slot"]:first-child');
+    // 時間選択（空き時間API取得完了まで待機）
+    const firstTimeSlot = page.locator('[data-testid="time-slot"]').first();
+    await firstTimeSlot.waitFor({ state: 'visible', timeout: 10000 });
+    await firstTimeSlot.click();
+
+    // 時間が選択されたことを確認（少し待機）
+    await page.waitForTimeout(500);
+
+    // スタッフ選択欄が表示されるまで待機（機能フラグ取得完了を待つ）
+    await bookingPage.expectStaffSelectVisible();
 
     // スタッフ選択
     if (staff) {
       await page.locator('select#staff').selectOption(staff.id);
     }
+
+    // 予約ボタンが有効になるまで待つ（React状態更新の完了を待つ）
+    await expect(page.locator('[data-testid="submit-button"]')).toBeEnabled({ timeout: 5000 });
 
     // 予約確定
     await page.click('[data-testid="submit-button"]');
@@ -127,12 +137,22 @@ test.describe('Issue #77: スタッフ指名機能のON/OFF設定', () => {
     const tomorrowDay = tomorrow.getDate();
     await page.click(`[data-day="${tomorrowDay}"]`);
 
-    // 時間選択
-    await page.waitForSelector('[data-testid="time-slot"]');
-    await page.click('[data-testid="time-slot"]:first-child');
+    // 時間選択（空き時間API取得完了まで待機）
+    const firstTimeSlot = page.locator('[data-testid="time-slot"]').first();
+    await firstTimeSlot.waitFor({ state: 'visible', timeout: 10000 });
+    await firstTimeSlot.click();
+
+    // 時間が選択されたことを確認（少し待機）
+    await page.waitForTimeout(500);
+
+    // スタッフ選択欄が表示されるまで待機（機能フラグ取得完了を待つ）
+    await bookingPage.expectStaffSelectVisible();
 
     // スタッフ選択（指名なし）
     await page.locator('select#staff').selectOption('');
+
+    // 予約ボタンが有効になるまで待つ（React状態更新の完了を待つ）
+    await expect(page.locator('[data-testid="submit-button"]')).toBeEnabled({ timeout: 5000 });
 
     // 予約確定
     await page.click('[data-testid="submit-button"]');
@@ -197,9 +217,16 @@ test.describe('Issue #77: スタッフ指名機能のON/OFF設定', () => {
     const tomorrowDay = tomorrow.getDate();
     await page.click(`[data-day="${tomorrowDay}"]`);
 
-    // 時間選択
-    await page.waitForSelector('[data-testid="time-slot"]');
-    await page.click('[data-testid="time-slot"]:first-child');
+    // 時間選択（空き時間API取得完了まで待機）
+    const firstTimeSlot = page.locator('[data-testid="time-slot"]').first();
+    await firstTimeSlot.waitFor({ state: 'visible', timeout: 10000 });
+    await firstTimeSlot.click();
+
+    // 時間が選択されたことを確認（少し待機）
+    await page.waitForTimeout(500);
+
+    // 予約ボタンが有効になるまで待つ（React状態更新の完了を待つ）
+    await expect(page.locator('[data-testid="submit-button"]')).toBeEnabled({ timeout: 5000 });
 
     // 予約確定（スタッフ選択なし）
     await page.click('[data-testid="submit-button"]');
