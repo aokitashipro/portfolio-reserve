@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import type { Prisma } from '@prisma/client';
 
 /**
  * セキュリティイベントの種類
@@ -20,7 +21,7 @@ export interface SecurityLogData {
   userId?: string; // ログインユーザーID（存在する場合）
   ipAddress?: string; // リクエスト元IPアドレス
   userAgent?: string; // User-Agent文字列
-  metadata?: Record<string, unknown>; // その他の情報（email、reason、pathなど）
+  metadata?: Prisma.InputJsonValue; // その他の情報（email、reason、pathなど）
 }
 
 /**
@@ -68,8 +69,7 @@ export async function logSecurityEvent(data: SecurityLogData): Promise<void> {
         userId: data.userId,
         ipAddress: data.ipAddress,
         userAgent: data.userAgent,
-        // Prismaの型システムとの互換性のため、anyを経由してキャスト
-        metadata: data.metadata ? (data.metadata as any) : undefined,
+        metadata: data.metadata,
       },
     });
   } catch (error) {
