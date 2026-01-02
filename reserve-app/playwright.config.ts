@@ -1,4 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// .env.localを読み込み（CI環境以外）
+if (!process.env.CI) {
+  dotenv.config({ path: path.resolve(__dirname, '.env.local') });
+}
 
 export default defineConfig({
   testDir: './src/__tests__/e2e',
