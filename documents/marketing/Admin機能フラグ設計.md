@@ -98,10 +98,10 @@ model FeatureFlag {
 ```typescript
 // prisma/seed.ts
 await prisma.featureFlag.upsert({
-  where: { tenantId: 'demo-restaurant' },
+  where: { tenantId: 'demo-booking' },
   update: {},
   create: {
-    tenantId: 'demo-restaurant',
+    tenantId: 'demo-booking',
     // デモ環境では全機能有効化
     enableStaffSelection: true,
     enableStaffShiftManagement: true,

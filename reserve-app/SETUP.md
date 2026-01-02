@@ -88,7 +88,7 @@ SUPABASE_SECRET_KEY="sb_secret_..."
 ### ステップ4: テナントIDを設定（マルチポートフォリオ対応）
 
 ```env
-NEXT_PUBLIC_TENANT_ID="demo-restaurant"
+NEXT_PUBLIC_TENANT_ID="demo-booking"
 ```
 
 別のポートフォリオシステムを作成する場合は、別のテナントIDを使用してください（例: `demo-hotel`, `demo-clinic`）。
@@ -164,7 +164,7 @@ Vercelダッシュボード > Settings > Environment Variables で以下を設�
 | `NEXT_PUBLIC_SUPABASE_URL` | SupabaseプロジェクトURL | Production, Preview, Development |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Anon Key | Production, Preview, Development |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Service Role Key | Production, Preview |
-| `NEXT_PUBLIC_TENANT_ID` | テナントID（例: demo-restaurant） | Production, Preview, Development |
+| `NEXT_PUBLIC_TENANT_ID` | テナントID（例: demo-booking） | Production, Preview, Development |
 
 ### ステップ3: デプロイ
 
@@ -180,11 +180,11 @@ vercel --prod
 
 | テーブル名 | 説明 |
 |-----------|------|
-| `restaurant_users` | ユーザー情報 |
-| `restaurant_staff` | スタッフ情報 |
-| `restaurant_menus` | メニュー情報 |
-| `restaurant_reservations` | 予約情報 |
-| `restaurant_settings` | 店舗設定 |
+| `booking_users` | ユーザー情報 |
+| `booking_staff` | スタッフ情報 |
+| `booking_menus` | メニュー情報 |
+| `booking_reservations` | 予約情報 |
+| `booking_settings` | 店舗設定 |
 
 すべてのテーブルに`tenant_id`カラムがあり、マルチポートフォリオ対応しています。
 
@@ -193,7 +193,7 @@ vercel --prod
 複数のポートフォリオシステム（予約システム、ホテル管理システムなど）を同じデータベースで管理する場合：
 
 - 各テーブルに`tenant_id`を含める
-- テーブル名にプレフィックス（`restaurant_*`, `hotel_*`など）を使用
+- テーブル名にプレフィックス（`booking_*`, `hotel_*`など）を使用
 - クエリ時に必ず`tenant_id`でフィルタリング
 
 ---

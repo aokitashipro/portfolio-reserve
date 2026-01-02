@@ -35,7 +35,7 @@
 
 | 環境変数名 | 説明 | 例 |
 |-----------|------|-----|
-| `NEXT_PUBLIC_TENANT_ID` | テナントID（マルチポートフォリオ対応） | `demo-restaurant` |
+| `NEXT_PUBLIC_TENANT_ID` | テナントID（マルチポートフォリオ対応） | `demo-booking` |
 | `NEXT_PUBLIC_BASE_URL` | アプリケーションのベースURL | `https://reserve-app.vercel.app` |
 | `NODE_ENV` | 環境（自動設定） | `production` |
 

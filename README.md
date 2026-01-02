@@ -1,6 +1,6 @@
-# Reserve System - レストラン予約管理システム
+# Reserve System - 予約管理システム
 
-Next.js + Supabase + Prisma で構築したポートフォリオ向け予約管理システム
+Next.js + Supabase + Prisma で構築したポートフォリオ向け予約管理システム（美容室・歯科医院・整体院など多業種対応）
 
 ---
 

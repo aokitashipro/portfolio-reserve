@@ -459,7 +459,7 @@ export async function createReservation(
       date_time: data.date_time || '2026-01-15T18:00:00Z',
       guest_count: data.guest_count || 4,
       status: data.status || 'pending',
-      tenant_id: data.tenant_id || 'demo-restaurant',
+      tenant_id: data.tenant_id || 'demo-booking',
       ...data,
     },
   });
@@ -477,7 +477,7 @@ export async function createMenu(
       description: data.description || 'テスト用メニュー',
       price: data.price || 1000,
       category: data.category || 'その他',
-      tenant_id: data.tenant_id || 'demo-restaurant',
+      tenant_id: data.tenant_id || 'demo-booking',
       ...data,
     },
   });
