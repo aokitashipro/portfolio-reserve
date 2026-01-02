@@ -290,42 +290,42 @@ datasource db {
 }
 
 // ユーザー
-model RestaurantUser {
+model BookingUser {
   id            String              @id @default(uuid())
-  tenantId      String              @default("demo-restaurant") @map("tenant_id")
+  tenantId      String              @default("demo-booking") @map("tenant_id")
   email         String
   name          String?
   phone         String?
   createdAt     DateTime            @default(now()) @map("created_at")
-  reservations  RestaurantReservation[]
+  reservations  BookingReservation[]
 
   @@unique([tenantId, email])
-  @@map("restaurant_users")
+  @@map("booking_users")
 }
 
 // 予約
-model RestaurantReservation {
+model BookingReservation {
   id        String   @id @default(uuid())
-  tenantId  String   @default("demo-restaurant") @map("tenant_id")
+  tenantId  String   @default("demo-booking") @map("tenant_id")
   userId    String   @map("user_id")
-  user      RestaurantUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      BookingUser @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      DateTime
   time      String
   menuId    String   @map("menu_id")
-  menu      RestaurantMenu @relation(fields: [menuId], references: [id])
+  menu      BookingMenu @relation(fields: [menuId], references: [id])
   staffId   String?  @map("staff_id")
-  staff     RestaurantStaff? @relation(fields: [staffId], references: [id])
+  staff     BookingStaff? @relation(fields: [staffId], references: [id])
   status    String   @default("pending")
   notes     String?
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@map("restaurant_reservations")
+  @@map("booking_reservations")
 }
 
 // メニュー
-model RestaurantMenu {
+model BookingMenu {
   id           String   @id @default(uuid())
-  tenantId     String   @default("demo-restaurant") @map("tenant_id")
+  tenantId     String   @default("demo-booking") @map("tenant_id")
   name         String
   description  String?
   price        Decimal  @db.Decimal(10, 2)
@@ -333,37 +333,37 @@ model RestaurantMenu {
   category     String?
   available    Boolean  @default(true)
   createdAt    DateTime @default(now()) @map("created_at")
-  reservations RestaurantReservation[]
+  reservations BookingReservation[]
 
-  @@map("restaurant_menus")
+  @@map("booking_menus")
 }
 
 // スタッフ
-model RestaurantStaff {
+model BookingStaff {
   id           String   @id @default(uuid())
-  tenantId     String   @default("demo-restaurant") @map("tenant_id")
+  tenantId     String   @default("demo-booking") @map("tenant_id")
   name         String
   email        String?
   phone        String?
   role         String?
   available    Boolean  @default(true)
   createdAt    DateTime @default(now()) @map("created_at")
-  reservations RestaurantReservation[]
+  reservations BookingReservation[]
 
-  @@map("restaurant_staff")
+  @@map("booking_staff")
 }
 
 // 店舗設定
-model RestaurantSettings {
+model BookingSettings {
   id                String   @id @default(uuid())
-  tenantId          String   @unique @default("demo-restaurant") @map("tenant_id")
+  tenantId          String   @unique @default("demo-booking") @map("tenant_id")
   businessHours     Json?    @map("business_hours")
   closedDays        String[]
   maxPartySize      Int      @default(10) @map("max_party_size")
   bookingWindowDays Int      @default(30) @map("booking_window_days")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  @@map("restaurant_settings")
+  @@map("booking_settings")
 }
 ```
 

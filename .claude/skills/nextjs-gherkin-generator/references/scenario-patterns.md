@@ -227,19 +227,19 @@ Feature: 予約一覧API
   @api @smoke
   Scenario: 認証済み管理者が予約一覧を取得する
     Given 管理者が認証済みである
-    And tenant_id "demo-restaurant" に以下の予約が存在する
+    And tenant_id "demo-booking" に以下の予約が存在する
       | id | customer_name | status |
       | 1 | 山田太郎 | confirmed |
       | 2 | 佐藤花子 | pending |
     When "GET /api/admin/reservations" にリクエストを送信する
     Then ステータスコード 200 が返される
     And レスポンスに2件の予約が含まれる
-    And 全ての予約に tenant_id "demo-restaurant" が設定されている
+    And 全ての予約に tenant_id "demo-booking" が設定されている
 
   @api @security
   Scenario: 別テナントの予約を取得できない
     Given 管理者が認証済みである
-    And 管理者の tenant_id が "demo-restaurant" である
+    And 管理者の tenant_id が "demo-booking" である
     And tenant_id "other-restaurant" に予約が存在する
     When "GET /api/admin/reservations" にリクエストを送信する
     Then レスポンスに "other-restaurant" の予約は含まれない

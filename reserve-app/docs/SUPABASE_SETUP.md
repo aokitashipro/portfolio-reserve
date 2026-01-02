@@ -106,7 +106,7 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="sb_publishable_xxxxxxxxxxxxxxxxxxxxxxxxxxx
 SUPABASE_SECRET_KEY="sb_secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
 # Application
-NEXT_PUBLIC_TENANT_ID="demo-restaurant"
+NEXT_PUBLIC_TENANT_ID="demo-booking"
 NEXT_PUBLIC_BASE_URL="http://localhost:3000"
 ```
 

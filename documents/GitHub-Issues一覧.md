@@ -100,30 +100,30 @@ Feature: データベース接続
 
 **実装タスク**:
 - [ ] Prismaインストール
-- [ ] schema.prisma作成（restaurant_* テーブル定義）
+- [ ] schema.prisma作成（booking_* テーブル定義）
 - [ ] .env設定（Supabase接続情報）
 - [ ] 初回マイグレーション実行
 - [ ] Prisma Clientセットアップ
 
 **データベーススキーマ**:
 ```prisma
-// restaurant_users
-model RestaurantUser {
+// booking_users
+model BookingUser {
   id         String   @id @default(uuid())
-  tenantId   String   @default("demo-restaurant") @map("tenant_id")
+  tenantId   String   @default("demo-booking") @map("tenant_id")
   email      String
   name       String?
   phone      String?
   createdAt  DateTime @default(now()) @map("created_at")
 
   @@unique([tenantId, email])
-  @@map("restaurant_users")
+  @@map("booking_users")
 }
 
-// restaurant_reservations
-// restaurant_menus
-// restaurant_staff
-// restaurant_settings
+// booking_reservations
+// booking_menus
+// booking_staff
+// booking_settings
 ```
 
 ---

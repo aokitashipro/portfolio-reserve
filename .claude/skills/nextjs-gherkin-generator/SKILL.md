@@ -92,11 +92,11 @@ Feature: 予約API
   @api @smoke
   Scenario: 有効なトークンで予約一覧を取得する
     Given 管理者が認証済みである
-    And tenant_idが "demo-restaurant" である
+    And tenant_idが "demo-booking" である
     When "GET /api/admin/reservations" にリクエストを送信する
     Then ステータスコード 200 が返される
     And レスポンスに予約一覧が含まれる
-    And 全ての予約に "demo-restaurant" のtenant_idが設定されている
+    And 全ての予約に "demo-booking" のtenant_idが設定されている
 
   @api @error
   Scenario: 未認証でAPI呼び出しを試みる

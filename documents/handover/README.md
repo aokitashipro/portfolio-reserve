@@ -542,25 +542,25 @@ export class RegisterPage {
 
 | テーブル名 | 説明 |
 |-----------|------|
-| `restaurant_users` | ユーザー情報 |
-| `restaurant_staff` | スタッフ情報 |
-| `restaurant_menus` | メニュー情報 |
-| `restaurant_reservations` | 予約情報 |
-| `restaurant_settings` | 店舗設定 |
+| `booking_users` | ユーザー情報 |
+| `booking_staff` | スタッフ情報 |
+| `booking_menus` | メニュー情報 |
+| `booking_reservations` | 予約情報 |
+| `booking_settings` | 店舗設定 |
 
 **特徴:**
 - **マルチテナント対応**: 全テーブルに `tenantId` カラム
-- **テーブルプレフィックス**: `restaurant_` で統一（複数ポートフォリオ対応）
-- **Supabase Auth統合**: `restaurant_users.authId` がSupabase Auth UUIDに対応
+- **テーブルプレフィックス**: `booking_` で統一（複数ポートフォリオ対応）
+- **Supabase Auth統合**: `booking_users.authId` がSupabase Auth UUIDに対応
 
 ---
 
 ### 主要なリレーション
 
 ```
-RestaurantUser 1 ----< ∞ RestaurantReservation
-RestaurantStaff 1 ----< ∞ RestaurantReservation
-RestaurantMenu 1 ----< ∞ RestaurantReservation
+BookingUser 1 ----< ∞ BookingReservation
+BookingStaff 1 ----< ∞ BookingReservation
+BookingMenu 1 ----< ∞ BookingReservation
 ```
 
 ---
@@ -570,11 +570,11 @@ RestaurantMenu 1 ----< ∞ RestaurantReservation
 詳細は `reserve-app/prisma/schema.prisma` を参照。
 
 **主要モデル:**
-- `RestaurantUser`: 顧客情報
-- `RestaurantStaff`: スタッフ情報（シフト管理予定）
-- `RestaurantMenu`: メニュー情報（カテゴリ・料金・所要時間）
-- `RestaurantReservation`: 予約情報（ステータス管理）
-- `RestaurantSettings`: 店舗設定（営業時間・定休日・予約間隔）
+- `BookingUser`: 顧客情報
+- `BookingStaff`: スタッフ情報（シフト管理予定）
+- `BookingMenu`: メニュー情報（カテゴリ・料金・所要時間）
+- `BookingReservation`: 予約情報（ステータス管理）
+- `BookingSettings`: 店舗設定（営業時間・定休日・予約間隔）
 
 **Enum:**
 - `ReservationStatus`: PENDING, CONFIRMED, CANCELLED, COMPLETED, NO_SHOW
@@ -815,7 +815,7 @@ Vercelデプロイを有効化する場合：
 
 A: 全テーブルに`tenantId`カラムがあり、複数店舗のデータを1つのデータベースで管理できる設計です。
 
-現在のデフォルト値: `demo-restaurant`
+現在のデフォルト値: `demo-booking`
 
 将来的に複数店舗を管理する場合、`tenantId`でデータを分離できます。
 

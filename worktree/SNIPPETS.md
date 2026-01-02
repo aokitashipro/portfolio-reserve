@@ -617,7 +617,7 @@ export const config = {
 DATABASE_URL="postgresql://user:password@host:5432/database"
 NEXT_PUBLIC_SUPABASE_URL="https://xxx.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJxxx..."
-NEXT_PUBLIC_TENANT_ID="demo-restaurant"
+NEXT_PUBLIC_TENANT_ID="demo-booking"
 RESEND_API_KEY="re_xxx"
 ```
 

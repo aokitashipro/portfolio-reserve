@@ -14,7 +14,7 @@
 - **即座予約確定したい店舗** vs **管理者承認が必要な店舗**
 - **シフト管理が必要** vs **常に営業している店舗**
 
-これらに対応するため、`RestaurantSettings`テーブルを拡張し、設定画面から運用形態を切り替え可能にする。
+これらに対応するため、`BookingSettings`テーブルを拡張し、設定画面から運用形態を切り替え可能にする。
 
 ---
 
@@ -97,7 +97,7 @@ enableStaffShifts Boolean @default(false) @map("enable_staff_shifts")
 
 **影響範囲**:
 - 空き時間API（`/api/available-slots`）
-  - `true`: `RestaurantStaffShift`と`RestaurantStaffVacation`を考慮して空き状況を計算
+  - `true`: `BookingStaffShift`と`BookingStaffVacation`を考慮して空き状況を計算
   - `false`: `isActive=true`の全スタッフを対象（現状の動作）
 - 管理画面（`/admin/staff`）
   - `true`: シフト設定・休暇設定タブを表示
@@ -405,9 +405,9 @@ timezone String @default("Asia/Tokyo") @map("timezone")
 ## 🗂️ データベーススキーマ拡張案
 
 ```prisma
-model RestaurantSettings {
+model BookingSettings {
   id         String  @id @default(uuid())
-  tenantId   String  @unique @default("demo-restaurant") @map("tenant_id")
+  tenantId   String  @unique @default("demo-booking") @map("tenant_id")
 
   // 既存フィールド
   storeName  String  @map("store_name")
@@ -442,7 +442,7 @@ model RestaurantSettings {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@map("restaurant_settings")
+  @@map("booking_settings")
 }
 ```
 

@@ -393,7 +393,7 @@ Authorization: Bearer {admin_access_token}
 | `status` | enum | NO | ステータスフィルタ | `all`, `PENDING`, `CONFIRMED`, `CANCELLED`, `COMPLETED`, `NO_SHOW` |
 | `dateRange` | enum | NO | 日付範囲フィルタ | `all`, `this-week`, `this-month` |
 | `search` | string | NO | 顧客名検索 | `山田` |
-| `tenantId` | string | NO | テナントID | `demo-restaurant` |
+| `tenantId` | string | NO | テナントID | `demo-booking` |
 
 **レスポンス (200)**:
 ```json
@@ -1332,7 +1332,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
   "sub": "user-uuid",
   "email": "user@example.com",
   "role": "customer",
-  "tenantId": "demo-restaurant",
+  "tenantId": "demo-booking",
   "iat": 1640000000,
   "exp": 1640003600
 }
