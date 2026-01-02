@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Card from '@/components/Card';
@@ -11,6 +11,7 @@ import type { Menu, Staff, TimeSlot } from '@/types/api';
 
 function BookingContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const preselectedMenuId = searchParams.get('menuId');
 
   // 機能フラグを取得
@@ -196,15 +197,11 @@ function BookingContent() {
       }
 
       setSuccess(true);
-      // Reset form after successful submission
+
+      // 予約成功後、マイページにリダイレクト
       setTimeout(() => {
-        setSelectedDate(null);
-        setSelectedTime(null);
-        setSelectedMenuId('');
-        setSelectedStaffId('');
-        setNotes('');
-        setSuccess(false);
-      }, 3000);
+        router.push('/mypage');
+      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : '予約の作成中にエラーが発生しました');
     } finally {
