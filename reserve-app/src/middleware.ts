@@ -143,8 +143,8 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/super-admin/')) {
     // ログインページは除外
     if (!pathname.startsWith('/super-admin/login')) {
-      // E2Eテスト環境では認証をスキップ
-      const skipAuthInTest = process.env.SKIP_AUTH_IN_TEST === 'true';
+      // E2Eテスト環境では認証をスキップ（本番環境では無効）
+      const skipAuthInTest = process.env.NODE_ENV !== 'production' && process.env.SKIP_AUTH_IN_TEST === 'true';
       if (!skipAuthInTest) {
         const isAuthenticated = checkAuthentication(request);
         if (!isAuthenticated) {
@@ -165,8 +165,8 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/admin/')) {
     // ログインページは除外
     if (!pathname.startsWith('/admin/login')) {
-      // E2Eテスト環境では認証をスキップ
-      const skipAuthInTest = process.env.SKIP_AUTH_IN_TEST === 'true';
+      // E2Eテスト環境では認証をスキップ（本番環境では無効）
+      const skipAuthInTest = process.env.NODE_ENV !== 'production' && process.env.SKIP_AUTH_IN_TEST === 'true';
       if (!skipAuthInTest) {
         const isAuthenticated = checkAuthentication(request);
         if (!isAuthenticated) {
@@ -186,8 +186,8 @@ export async function middleware(request: NextRequest) {
   const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path));
 
   if (isProtectedPath) {
-    // E2Eテスト環境では認証をスキップ
-    const skipAuthInTest = process.env.SKIP_AUTH_IN_TEST === 'true';
+    // E2Eテスト環境では認証をスキップ（本番環境では無効）
+    const skipAuthInTest = process.env.NODE_ENV !== 'production' && process.env.SKIP_AUTH_IN_TEST === 'true';
     if (!skipAuthInTest) {
       const isAuthenticated = checkAuthentication(request);
       if (!isAuthenticated) {
