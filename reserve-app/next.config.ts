@@ -1,5 +1,27 @@
 import type { NextConfig } from "next";
 
+// ビルド時の環境変数チェック
+// SKIP_AUTH_IN_TESTがproduction環境で有効になっていないか警告
+const checkProductionSecurity = () => {
+  const nodeEnv = process.env.NODE_ENV;
+  const skipAuthInTest = process.env.SKIP_AUTH_IN_TEST;
+
+  // production環境でSKIP_AUTH_IN_TEST=trueが設定されている場合は警告
+  if (nodeEnv === 'production' && skipAuthInTest === 'true') {
+    console.warn('\n');
+    console.warn('⚠️  WARNING: SKIP_AUTH_IN_TEST is enabled in production!');
+    console.warn('⚠️  This is a security risk and should NEVER be used in production.');
+    console.warn('⚠️  Authentication bypass is only for E2E testing.');
+    console.warn('\n');
+
+    // 本番環境での事故を防ぐため、ビルドを失敗させることも検討できます
+    // throw new Error('SKIP_AUTH_IN_TEST must not be enabled in production');
+  }
+};
+
+// ビルド開始時にチェックを実行
+checkProductionSecurity();
+
 const nextConfig: NextConfig = {
   /**
    * セキュリティヘッダー設定

@@ -146,8 +146,8 @@ export async function getAuthenticatedBookingUser(): Promise<{
  * @returns PrismaのBookingUser
  */
 export async function requireAuthAndGetBookingUser() {
-  // E2Eテスト環境では認証をスキップしてテスト用ユーザーを返す
-  const skipAuthInTest = process.env.SKIP_AUTH_IN_TEST === 'true';
+  // E2Eテスト環境では認証をスキップしてテスト用ユーザーを返す（本番環境では無効）
+  const skipAuthInTest = process.env.NODE_ENV !== 'production' && process.env.SKIP_AUTH_IN_TEST === 'true';
   if (skipAuthInTest) {
     // テスト用の既存ユーザー（シードデータの山田 太郎）を返す
     const testUser = await prisma.bookingUser.findFirst({
@@ -219,8 +219,8 @@ export function checkAuthHeader(
 export function checkAdminAuthHeader(
   request: NextRequest
 ): string | ReturnType<typeof errorResponse> {
-  // E2Eテスト環境では認証をスキップ
-  const skipAuthInTest = process.env.SKIP_AUTH_IN_TEST === 'true';
+  // E2Eテスト環境では認証をスキップ（本番環境では無効）
+  const skipAuthInTest = process.env.NODE_ENV !== 'production' && process.env.SKIP_AUTH_IN_TEST === 'true';
   if (skipAuthInTest) {
     return 'test-admin-user'; // テスト用のダミーユーザーIDを返す
   }
