@@ -8,6 +8,10 @@ import { LoginPage } from './pages/LoginPage';
  * Gherkin: reserve-app/features/admin/weekly-calendar.feature
  */
 
+// E2E用の管理者認証情報を環境変数から取得
+const E2E_ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || 'admin@example.com';
+const E2E_ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || 'admin123';
+
 test.describe('管理者向け週間カレンダーでの予約管理', () => {
   let adminReservationsPage: AdminReservationsPage;
   let loginPage: LoginPage;
@@ -16,9 +20,9 @@ test.describe('管理者向け週間カレンダーでの予約管理', () => {
     adminReservationsPage = new AdminReservationsPage(page);
     loginPage = new LoginPage(page);
 
-    // 管理者でログイン
+    // 管理者でログイン（環境変数から認証情報を取得）
     await loginPage.goto();
-    await loginPage.login('admin@example.com', 'admin123');
+    await loginPage.login(E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD);
     await page.waitForURL('/admin/dashboard');
   });
 
