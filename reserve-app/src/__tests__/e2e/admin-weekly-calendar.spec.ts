@@ -21,7 +21,7 @@ test.describe('管理者向け週間カレンダーでの予約管理', () => {
     loginPage = new LoginPage(page);
 
     // 管理者でログイン（環境変数から認証情報を取得）
-    await loginPage.goto();
+    await loginPage.goto('/admin/login');
     await loginPage.login(E2E_ADMIN_EMAIL, E2E_ADMIN_PASSWORD);
     await page.waitForURL('/admin/dashboard');
   });
