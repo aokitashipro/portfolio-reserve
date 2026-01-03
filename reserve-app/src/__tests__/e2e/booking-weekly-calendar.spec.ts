@@ -187,25 +187,186 @@ test.describe('週間カレンダー表示での予約 (#107)', () => {
  * テストグループ: 週間カレンダーの空き時間表示
  */
 test.describe('週間カレンダーの空き時間表示 (#107)', () => {
-  test.skip('週間カレンダーで空き時間が一目でわかる', async ({ page }) => {
-    // TODO: 週間カレンダーコンポーネント実装後に実装
-    // 空き時間ブロックが緑色で表示される
-    // 予約済みブロックがグレーアウト表示される
+  let bookingPage: BookingPage;
+
+  test.beforeEach(async ({ page }) => {
+    bookingPage = new BookingPage(page);
+
+    // 週間カレンダー用のモックデータ
+    await page.route('**/api/available-slots*', async (route) => {
+      const url = new URL(route.request().url());
+      const date = url.searchParams.get('date');
+
+      // 日付ごとのモックデータ
+      const mockDataByDate: { [key: string]: any } = {
+        '2026-01-06': {
+          // 月曜日
+          success: true,
+          data: {
+            slots: [
+              { time: '09:00', available: true },
+              { time: '10:00', available: false }, // 予約済み
+              { time: '11:00', available: true },
+              { time: '14:00', available: true },
+              { time: '15:00', available: true },
+            ],
+          },
+        },
+        '2026-01-07': {
+          // 火曜日
+          success: true,
+          data: {
+            slots: [
+              { time: '09:00', available: true },
+              { time: '10:00', available: true },
+              { time: '11:00', available: false }, // 予約済み
+              { time: '14:00', available: true },
+              { time: '15:00', available: true },
+            ],
+          },
+        },
+        '2026-01-08': {
+          // 水曜日
+          success: true,
+          data: {
+            slots: [
+              { time: '09:00', available: false }, // 予約済み
+              { time: '10:00', available: true },
+              { time: '11:00', available: true },
+              { time: '14:00', available: true },
+              { time: '15:00', available: true },
+            ],
+          },
+        },
+      };
+
+      const mockData = mockDataByDate[date || ''] || {
+        success: true,
+        data: {
+          slots: [
+            { time: '09:00', available: true },
+            { time: '10:00', available: true },
+            { time: '11:00', available: true },
+            { time: '14:00', available: true },
+            { time: '15:00', available: true },
+          ],
+        },
+      };
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(mockData),
+      });
+    });
+
+    await bookingPage.goto();
+    await bookingPage.waitForLoad();
+    await bookingPage.selectMenu(1);
+    await bookingPage.wait(500);
   });
 
-  test.skip('空き時間を1クリックで選択できる', async ({ page }) => {
-    // TODO: 週間カレンダーコンポーネント実装後に実装
-    // 空きブロックをクリックして日時選択
-    // 予約確定ボタンが有効になる
+  /**
+   * Scenario: 週間カレンダーで空き時間が一目でわかる
+   */
+  test('週間カレンダーで空き時間が一目でわかる', async () => {
+    // Given: 週間カレンダーが表示されている
+    await bookingPage.expectWeeklyCalendarVisible();
+
+    // Then: 月曜日09:00のブロックが緑色で表示される（空き）
+    await bookingPage.expectWeeklyTimeBlockAvailable(0, '09:00');
+
+    // And: 月曜日10:00のブロックがグレーアウト表示される（予約済み）
+    await bookingPage.expectWeeklyTimeBlockUnavailable(0, '10:00');
+
+    // And: 火曜日09:00のブロックが緑色で表示される（空き）
+    await bookingPage.expectWeeklyTimeBlockAvailable(1, '09:00');
+
+    // And: 火曜日14:00のブロックが緑色で表示される（空き）
+    await bookingPage.expectWeeklyTimeBlockAvailable(1, '14:00');
+
+    // And: 水曜日10:00のブロックが緑色で表示される（空き）
+    await bookingPage.expectWeeklyTimeBlockAvailable(2, '10:00');
   });
 
-  test.skip('予約済みの時間はクリックできない', async ({ page }) => {
-    // TODO: 週間カレンダーコンポーネント実装後に実装
-    // 予約済みブロックがクリックできない
+  /**
+   * Scenario: 空き時間を1クリックで選択できる
+   */
+  test('空き時間を1クリックで選択できる', async () => {
+    // Given: 週間カレンダーが表示されている
+    await bookingPage.expectWeeklyCalendarVisible();
+
+    // When: 火曜日14:00の空きブロックをクリックする
+    await bookingPage.clickWeeklyTimeBlock(1, '14:00');
+
+    // Then: 日付「2026年1月7日（火）」が選択される
+    const selectedDateText = await bookingPage.page
+      .locator('[data-testid="selected-date"]')
+      .textContent();
+    expect(selectedDateText).toContain('2026年1月7日（火）');
+
+    // And: 時間「14:00」が選択される
+    const selectedTimeText = await bookingPage.page
+      .locator('[data-testid="selected-time"]')
+      .textContent();
+    expect(selectedTimeText).toContain('14:00');
+
+    // And: 予約確定ボタンが有効になる
+    await bookingPage.expectSubmitButtonEnabled();
   });
 
-  test.skip('休憩時間がグレー表示される', async ({ page }) => {
-    // TODO: 週間カレンダーコンポーネント実装後に実装
-    // 休憩時間ブロックが表示される
+  /**
+   * Scenario: 予約済みの時間はクリックできない
+   */
+  test('予約済みの時間はクリックできない', async () => {
+    // Given: 週間カレンダーが表示されている
+    await bookingPage.expectWeeklyCalendarVisible();
+
+    // When: 月曜日10:00の予約済みブロックをクリックする
+    // Then: クリックできない（disabledなのでクリックイベントが発火しない）
+    await bookingPage.expectWeeklyTimeBlockUnavailable(0, '10:00');
+
+    // And: 日付と時間が選択されない（予約確定ボタンが無効のまま）
+    await bookingPage.expectSubmitButtonDisabled();
+
+    // And: 予約済みブロックがグレーアウトのまま
+    await bookingPage.expectWeeklyTimeBlockUnavailable(0, '10:00');
+  });
+
+  /**
+   * Scenario: 休憩時間がグレー表示される
+   */
+  test('休憩時間がグレー表示される', async ({ page }) => {
+    // 店舗設定APIのモック（休憩時間12:00-13:00）
+    await page.route('**/api/settings*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: {
+            openingTime: '09:00',
+            closingTime: '18:00',
+            breakTimeStart: '12:00',
+            breakTimeEnd: '13:00',
+          },
+        }),
+      });
+    });
+
+    // 再度ページを読み込んで設定を反映
+    await bookingPage.reload();
+    await bookingPage.selectMenu(1);
+    await bookingPage.wait(500);
+
+    // Given: 週間カレンダーが表示されている
+    await bookingPage.expectWeeklyCalendarVisible();
+
+    // Then: 12:00の時間帯に「休憩時間」と表示される
+    await bookingPage.expectBreakTimeVisible('12:00');
+
+    // And: 休憩時間のブロックがグレーで表示される
+    // And: 休憩時間のブロックはクリックできない
+    // （expectBreakTimeVisibleで検証済み）
   });
 });
