@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { DayOfWeek } from '@prisma/client';
 import type { NextRequest } from 'next/server';
 import { requireAdminApiAuth } from '@/lib/admin-api-auth';
+import { minutesSinceStartOfDay } from '@/lib/time-utils';
 
 /**
  * シフト設定用のバリデーションスキーマ
@@ -122,8 +123,8 @@ export async function POST(
 
     // 時間の妥当性チェック（トランザクション前に実行）
     for (const shift of shifts) {
-      const startMinutes = timeToMinutes(shift.startTime);
-      const endMinutes = timeToMinutes(shift.endTime);
+      const startMinutes = minutesSinceStartOfDay(shift.startTime);
+      const endMinutes = minutesSinceStartOfDay(shift.endTime);
 
       if (endMinutes <= startMinutes) {
         return errorResponse(
@@ -209,10 +210,3 @@ export async function POST(
   }
 }
 
-/**
- * 時刻文字列（HH:MM）を分単位に変換
- */
-function timeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
-}
