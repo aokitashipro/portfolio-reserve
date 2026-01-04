@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { successResponse, errorResponse, withErrorHandling } from '@/lib/api-response';
 import { availableSlotsQuerySchema } from '@/lib/validations';
 import { getFeatureFlags } from '@/lib/api-feature-flag';
+import { minutesSinceStartOfDay, parseTimeString, formatMinutesToTime } from '@/lib/time-utils';
 import type { AvailableSlots, TimeSlot } from '@/types/api';
 
 const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || 'demo-booking';
@@ -17,16 +18,11 @@ function generateTimeSlots(
   menuDuration: number
 ): string[] {
   const slots: string[] = [];
-  const [openHour, openMinute] = openTime.split(':').map(Number);
-  const [closeHour, closeMinute] = closeTime.split(':').map(Number);
-
-  const startMinutes = openHour * 60 + openMinute;
-  const endMinutes = closeHour * 60 + closeMinute - menuDuration; // Exclude slots that would exceed closing time
+  const startMinutes = minutesSinceStartOfDay(openTime);
+  const endMinutes = minutesSinceStartOfDay(closeTime) - menuDuration; // Exclude slots that would exceed closing time
 
   for (let minutes = startMinutes; minutes <= endMinutes; minutes += slotDuration) {
-    const hour = Math.floor(minutes / 60);
-    const minute = minutes % 60;
-    slots.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`);
+    slots.push(formatMinutesToTime(minutes));
   }
 
   return slots;
@@ -52,14 +48,9 @@ function isStaffWorkingAtTime(
   }
 
   // 時間を分に変換
-  const [timeHour, timeMinute] = time.split(':').map(Number);
-  const timeMinutes = timeHour * 60 + timeMinute;
-
-  const [startHour, startMinute] = shift.startTime.split(':').map(Number);
-  const startMinutes = startHour * 60 + startMinute;
-
-  const [endHour, endMinute] = shift.endTime.split(':').map(Number);
-  const endMinutes = endHour * 60 + endMinute;
+  const timeMinutes = minutesSinceStartOfDay(time);
+  const startMinutes = minutesSinceStartOfDay(shift.startTime);
+  const endMinutes = minutesSinceStartOfDay(shift.endTime);
 
   // シフト内の時間かチェック
   return timeMinutes >= startMinutes && timeMinutes < endMinutes;
@@ -73,7 +64,7 @@ function isTimeBlocked(
   date: string,
   blockedSlots: { startDateTime: Date; endDateTime: Date }[]
 ): boolean {
-  const [hour, minute] = time.split(':').map(Number);
+  const { hour, minute } = parseTimeString(time);
   const slotDateTime = new Date(date);
   slotDateTime.setHours(hour, minute, 0, 0);
 
@@ -95,13 +86,11 @@ function isSlotAvailable(
   reservations: { reservedTime: string; menu: { duration: number } }[],
   menuDuration: number
 ): boolean {
-  const [slotHour, slotMinute] = time.split(':').map(Number);
-  const slotStartMinutes = slotHour * 60 + slotMinute;
+  const slotStartMinutes = minutesSinceStartOfDay(time);
   const slotEndMinutes = slotStartMinutes + menuDuration;
 
   for (const reservation of reservations) {
-    const [resHour, resMinute] = reservation.reservedTime.split(':').map(Number);
-    const resStartMinutes = resHour * 60 + resMinute;
+    const resStartMinutes = minutesSinceStartOfDay(reservation.reservedTime);
     const resEndMinutes = resStartMinutes + reservation.menu.duration;
 
     // Check for time slot overlap

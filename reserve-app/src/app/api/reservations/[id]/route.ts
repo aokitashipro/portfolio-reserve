@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { successResponse, errorResponse, withErrorHandling } from '@/lib/api-response';
 import { updateReservationSchema, cancelReservationSchema } from '@/lib/validations';
 import { sendReservationUpdateEmail, sendReservationCancellationEmail } from '@/lib/email';
+import { minutesSinceStartOfDay, parseTimeString } from '@/lib/time-utils';
 import type { Reservation } from '@/types/api';
 import { requireFeatureFlag } from '@/lib/api-feature-flag';
 import { requireAuthAndGetBookingUser } from '@/lib/auth';
@@ -187,13 +188,11 @@ export async function PATCH(
           },
         });
 
-        const [newHour, newMinute] = finalTime.split(':').map(Number);
-        const newStartMinutes = newHour * 60 + newMinute;
+        const newStartMinutes = minutesSinceStartOfDay(finalTime);
         const newEndMinutes = newStartMinutes + newMenu.duration;
 
         for (const reservation of overlappingReservations) {
-          const [resHour, resMinute] = reservation.reservedTime.split(':').map(Number);
-          const resStartMinutes = resHour * 60 + resMinute;
+          const resStartMinutes = minutesSinceStartOfDay(reservation.reservedTime);
           const resEndMinutes = resStartMinutes + reservation.menu.duration;
 
           if (
@@ -333,9 +332,9 @@ export async function DELETE(
     const cancellationDeadlineHours = settings?.cancellationDeadlineHours || 24;
 
     // 予約日時から期限時間を引いた時刻を計算
-    const [hours, minutes] = existingReservation.reservedTime.split(':').map(Number);
+    const { hour, minute } = parseTimeString(existingReservation.reservedTime);
     const reservationDateTime = new Date(existingReservation.reservedDate);
-    reservationDateTime.setHours(hours, minutes, 0, 0);
+    reservationDateTime.setHours(hour, minute, 0, 0);
 
     const deadlineDateTime = new Date(reservationDateTime);
     deadlineDateTime.setHours(deadlineDateTime.getHours() - cancellationDeadlineHours);

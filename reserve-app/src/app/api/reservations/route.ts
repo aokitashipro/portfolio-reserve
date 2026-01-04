@@ -5,6 +5,7 @@ import { createReservationSchema } from '@/lib/validations';
 import { sendReservationConfirmationEmail } from '@/lib/email';
 import { getFeatureFlags } from '@/lib/api-feature-flag';
 import { requireAuthAndGetBookingUser } from '@/lib/auth';
+import { minutesSinceStartOfDay } from '@/lib/time-utils';
 import type { Reservation } from '@/types/api';
 
 const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || 'demo-booking';
@@ -184,8 +185,7 @@ export async function POST(request: NextRequest) {
       }
 
       // 各スタッフの予約状況を確認し、空いているスタッフを見つける
-      const [reservedHour, reservedMinute] = reservedTime.split(':').map(Number);
-      const reservedStartMinutes = reservedHour * 60 + reservedMinute;
+      const reservedStartMinutes = minutesSinceStartOfDay(reservedTime);
       const reservedEndMinutes = reservedStartMinutes + menu.duration;
 
       for (const staff of availableStaff) {
@@ -205,8 +205,7 @@ export async function POST(request: NextRequest) {
         // 時間重複チェック
         let isAvailable = true;
         for (const res of staffReservations) {
-          const [resHour, resMinute] = res.reservedTime.split(':').map(Number);
-          const resStartMinutes = resHour * 60 + resMinute;
+          const resStartMinutes = minutesSinceStartOfDay(res.reservedTime);
           const resEndMinutes = resStartMinutes + res.menu.duration;
 
           // 時間が重複している場合
@@ -259,14 +258,12 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      const [newHour, newMinute] = reservedTime.split(':').map(Number);
-      const newStartMinutes = newHour * 60 + newMinute;
+      const newStartMinutes = minutesSinceStartOfDay(reservedTime);
       const newEndMinutes = newStartMinutes + menu.duration;
 
       // ユーザー自身の予約時間重複チェック
       for (const userRes of userReservations) {
-        const [resHour, resMinute] = userRes.reservedTime.split(':').map(Number);
-        const resStartMinutes = resHour * 60 + resMinute;
+        const resStartMinutes = minutesSinceStartOfDay(userRes.reservedTime);
         const resEndMinutes = resStartMinutes + userRes.menu.duration;
 
         // Check for overlap
@@ -295,8 +292,7 @@ export async function POST(request: NextRequest) {
 
         // スタッフの予約時間重複チェック
         for (const staffRes of staffReservations) {
-          const [resHour, resMinute] = staffRes.reservedTime.split(':').map(Number);
-          const resStartMinutes = resHour * 60 + resMinute;
+          const resStartMinutes = minutesSinceStartOfDay(staffRes.reservedTime);
           const resEndMinutes = resStartMinutes + staffRes.menu.duration;
 
           // Check for overlap
@@ -326,8 +322,7 @@ export async function POST(request: NextRequest) {
 
         // 重複チェック
         for (const res of allReservations) {
-          const [resHour, resMinute] = res.reservedTime.split(':').map(Number);
-          const resStartMinutes = resHour * 60 + resMinute;
+          const resStartMinutes = minutesSinceStartOfDay(res.reservedTime);
           const resEndMinutes = resStartMinutes + res.menu.duration;
 
           if (
