@@ -5,7 +5,12 @@ import { createReservationSchema } from '@/lib/validations';
 import { sendReservationConfirmationEmail } from '@/lib/email';
 import { getFeatureFlags } from '@/lib/api-feature-flag';
 import { requireAuthAndGetBookingUser } from '@/lib/auth';
-import { minutesSinceStartOfDay, hasTimeOverlap } from '@/lib/time-utils';
+import {
+  findAvailableStaff,
+  checkUserReservationConflicts,
+  checkStaffReservationConflicts,
+  checkGeneralReservationConflicts,
+} from '@/lib/reservation-helpers';
 import type { Reservation } from '@/types/api';
 
 const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || 'demo-booking';
@@ -169,60 +174,8 @@ export async function POST(request: NextRequest) {
 
     // Issue #77: スタッフ指名機能がOFFの場合、スタッフを自動割り当て
     if (featureFlags && !featureFlags.enableStaffSelection && !staffId) {
-      // 利用可能なスタッフを検索
-      const availableStaff = await prisma.bookingStaff.findMany({
-        where: {
-          tenantId: TENANT_ID,
-          isActive: true,
-        },
-        select: {
-          id: true,
-        },
-      });
+      staffId = await findAvailableStaff(reservedDate, reservedTime, menu.duration);
 
-      if (availableStaff.length === 0) {
-        return errorResponse('No staff available', 404, 'NO_STAFF_AVAILABLE');
-      }
-
-      // 各スタッフの予約状況を確認し、空いているスタッフを見つける
-      const reservedStartMinutes = minutesSinceStartOfDay(reservedTime);
-      const reservedEndMinutes = reservedStartMinutes + menu.duration;
-
-      for (const staff of availableStaff) {
-        // スタッフの既存予約を確認
-        const staffReservations = await prisma.bookingReservation.findMany({
-          where: {
-            tenantId: TENANT_ID,
-            staffId: staff.id,
-            reservedDate: new Date(reservedDate),
-            status: { in: ['PENDING', 'CONFIRMED'] },
-          },
-          include: {
-            menu: { select: { duration: true } },
-          },
-        });
-
-        // 時間重複チェック
-        let isAvailable = true;
-        for (const res of staffReservations) {
-          const resStartMinutes = minutesSinceStartOfDay(res.reservedTime);
-          const resEndMinutes = resStartMinutes + res.menu.duration;
-
-          // 時間が重複している場合
-          if (hasTimeOverlap(reservedStartMinutes, reservedEndMinutes, resStartMinutes, resEndMinutes)) {
-            isAvailable = false;
-            break;
-          }
-        }
-
-        // 空いているスタッフが見つかった
-        if (isAvailable) {
-          staffId = staff.id;
-          break;
-        }
-      }
-
-      // 空いているスタッフが見つからなかった場合
       if (!staffId) {
         return errorResponse('No available staff for the selected time', 409, 'NO_STAFF_AVAILABLE_FOR_TIME');
       }
@@ -242,81 +195,16 @@ export async function POST(request: NextRequest) {
     // トランザクション内で予約を作成（Race Condition対策）
     const reservation = await prisma.$transaction(async (tx) => {
       // 1. ユーザー自身の重複予約チェック（同じ時間帯に既に予約がないか）
-      const userReservations = await tx.bookingReservation.findMany({
-        where: {
-          tenantId: TENANT_ID,
-          userId: bookingUser.id,
-          reservedDate: new Date(reservedDate),
-          status: { in: ['PENDING', 'CONFIRMED'] },
-        },
-        include: {
-          menu: { select: { duration: true } },
-        },
-      });
-
-      const newStartMinutes = minutesSinceStartOfDay(reservedTime);
-      const newEndMinutes = newStartMinutes + menu.duration;
-
-      // ユーザー自身の予約時間重複チェック
-      for (const userRes of userReservations) {
-        const resStartMinutes = minutesSinceStartOfDay(userRes.reservedTime);
-        const resEndMinutes = resStartMinutes + userRes.menu.duration;
-
-        // Check for overlap
-        if (hasTimeOverlap(newStartMinutes, newEndMinutes, resStartMinutes, resEndMinutes)) {
-          throw new Error('既にこの時間帯に予約があります');
-        }
-      }
+      await checkUserReservationConflicts(tx, bookingUser.id, reservedDate, reservedTime, menu.duration);
 
       // 2. スタッフの重複予約チェック（スタッフ指定がある場合のみ）
       if (staffId) {
-        const staffReservations = await tx.bookingReservation.findMany({
-          where: {
-            tenantId: TENANT_ID,
-            staffId,
-            reservedDate: new Date(reservedDate),
-            status: { in: ['PENDING', 'CONFIRMED'] },
-          },
-          include: {
-            menu: { select: { duration: true } },
-          },
-        });
-
-        // スタッフの予約時間重複チェック
-        for (const staffRes of staffReservations) {
-          const resStartMinutes = minutesSinceStartOfDay(staffRes.reservedTime);
-          const resEndMinutes = resStartMinutes + staffRes.menu.duration;
-
-          // Check for overlap
-          if (hasTimeOverlap(newStartMinutes, newEndMinutes, resStartMinutes, resEndMinutes)) {
-            throw new Error('選択されたスタッフは指定時間帯に対応できません');
-          }
-        }
+        await checkStaffReservationConflicts(tx, staffId, reservedDate, reservedTime, menu.duration);
       }
 
       // 3. 全体の重複予約チェック（スタッフ指定なしの場合）
       if (!staffId) {
-        const allReservations = await tx.bookingReservation.findMany({
-          where: {
-            tenantId: TENANT_ID,
-            staffId: null,
-            reservedDate: new Date(reservedDate),
-            status: { in: ['PENDING', 'CONFIRMED'] },
-          },
-          include: {
-            menu: { select: { duration: true } },
-          },
-        });
-
-        // 重複チェック
-        for (const res of allReservations) {
-          const resStartMinutes = minutesSinceStartOfDay(res.reservedTime);
-          const resEndMinutes = resStartMinutes + res.menu.duration;
-
-          if (hasTimeOverlap(newStartMinutes, newEndMinutes, resStartMinutes, resEndMinutes)) {
-            throw new Error('この時間は既に予約済みです');
-          }
-        }
+        await checkGeneralReservationConflicts(tx, reservedDate, reservedTime, menu.duration);
       }
 
       // 4. 予約作成
