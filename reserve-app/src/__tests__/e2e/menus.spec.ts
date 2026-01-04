@@ -27,7 +27,7 @@ test.describe('メニュー一覧表示', () => {
    *   And 各メニューに所要時間が表示される
    *   And 各メニューに説明が表示される
    */
-  test('すべてのアクティブなメニューが表示される', async () => {
+  test('すべてのアクティブなメニューが表示される @smoke', async () => {
     // Given: メニュー一覧ページにアクセスしている
     await menusPage.goto();
 
@@ -69,7 +69,7 @@ test.describe('メニュー一覧表示', () => {
    *   Then 予約ページ"/booking"にリダイレクトされる
    *   And メニューIDがクエリパラメータに含まれている
    */
-  test('メニューから予約ページへ遷移できる', async () => {
+  test('メニューから予約ページへ遷移できる @smoke', async () => {
     // Given: メニュー一覧ページにアクセスしている
     await menusPage.goto();
 

@@ -15,7 +15,7 @@ test.describe('User Authentication', () => {
   };
 
   test.describe('User Registration (#5)', () => {
-    test('should successfully register a new user', async ({ page }) => {
+    test('should successfully register a new user @smoke', async ({ page }) => {
       const registerPage = new RegisterPage(page);
 
       // Given: 新規登録ページにアクセスしている
@@ -113,7 +113,7 @@ test.describe('User Authentication', () => {
   });
 
   test.describe('User Login (#6)', () => {
-    test('should show validation errors for empty fields', async ({ page }) => {
+    test('should show validation errors for empty fields @smoke', async ({ page }) => {
       const loginPage = new LoginPage(page);
 
       // Given: ログインページにアクセスしている

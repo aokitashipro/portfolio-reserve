@@ -30,7 +30,7 @@ test.describe('Booking Flow', () => {
   /**
    * Scenario: メニューとスタッフがAPIから読み込まれる
    */
-  test('should load menus and staff from API', async ({ page }) => {
+  test('should load menus and staff from API @smoke', async ({ page }) => {
     const bookingPage = new BookingPage(page);
 
     // Given: 予約ページにアクセスしている
