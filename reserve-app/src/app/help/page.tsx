@@ -23,7 +23,7 @@ export default function HelpPage() {
                 24時間自動予約受付で電話対応を削減。顧客情報を一元管理してリピート率向上。
               </p>
               <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Link href="/booking">
+                <Link href="/">
                   <Button size="lg" className="min-w-[200px]">
                     今すぐ予約する
                   </Button>
