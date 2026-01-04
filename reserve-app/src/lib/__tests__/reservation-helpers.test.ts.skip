@@ -1,0 +1,282 @@
+/**
+ * reservation-helpers.ts のユニットテスト
+ */
+
+// Prismaのモックを最初に定義（すべてのimportの前）
+jest.mock('@/lib/prisma');
+
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { prisma } from '@/lib/prisma';
+import {
+  findAvailableStaff,
+  checkUserReservationConflicts,
+  checkStaffReservationConflicts,
+  checkGeneralReservationConflicts,
+} from '../reservation-helpers';
+
+// モックメソッドの型定義
+const mockBookingStaffFindMany = prisma.bookingStaff.findMany as jest.MockedFunction<typeof prisma.bookingStaff.findMany>;
+const mockBookingReservationFindMany = prisma.bookingReservation.findMany as jest.MockedFunction<typeof prisma.bookingReservation.findMany>;
+
+describe('reservation-helpers', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('findAvailableStaff', () => {
+    it('利用可能なスタッフが見つかる場合、スタッフIDを返す', async () => {
+      // スタッフが2人いる
+      mockBookingStaffFindMany.mockResolvedValue([
+        { id: 'staff-1' },
+        { id: 'staff-2' },
+      ] as never);
+
+      // staff-1は14:00-15:00に予約あり、staff-2は空き
+      mockBookingReservationFindMany
+        .mockResolvedValueOnce([
+          // staff-1の予約
+          {
+            reservedTime: '14:00',
+            menu: { duration: 60 },
+          },
+        ] as never)
+        .mockResolvedValueOnce([
+          // staff-2の予約なし
+        ] as never);
+
+      const result = await findAvailableStaff('2025-01-20', '16:00', 60);
+
+      expect(result).toEqual({ found: true, staffId: 'staff-2' });
+    });
+
+    it('アクティブなスタッフがいない場合、NO_ACTIVE_STAFF理由を返す', async () => {
+      mockBookingStaffFindMany.mockResolvedValue([] as never);
+
+      const result = await findAvailableStaff('2025-01-20', '14:00', 60);
+
+      expect(result).toEqual({ found: false, reason: 'NO_ACTIVE_STAFF' });
+    });
+
+    it('全スタッフが予約済みの場合、NO_AVAILABLE_STAFF理由を返す', async () => {
+      mockBookingStaffFindMany.mockResolvedValue([
+        { id: 'staff-1' },
+      ] as never);
+
+      // staff-1は14:00-15:00に予約あり
+      mockBookingReservationFindMany.mockResolvedValue([
+        {
+          reservedTime: '14:00',
+          menu: { duration: 60 },
+        },
+      ] as never);
+
+      // 14:30-15:30の予約を試みる（重複する）
+      const result = await findAvailableStaff('2025-01-20', '14:30', 60);
+
+      expect(result).toEqual({ found: false, reason: 'NO_AVAILABLE_STAFF' });
+    });
+
+    it('時間が重複しないスタッフを見つける', async () => {
+      mockBookingStaffFindMany.mockResolvedValue([
+        { id: 'staff-1' },
+        { id: 'staff-2' },
+      ] as never);
+
+      // staff-1は14:00-15:00に予約あり
+      mockBookingReservationFindMany
+        .mockResolvedValueOnce([
+          {
+            reservedTime: '14:00',
+            menu: { duration: 60 },
+          },
+        ] as never)
+        .mockResolvedValueOnce([] as never);
+
+      // 15:00-16:00の予約を試みる（重複しない）
+      const result = await findAvailableStaff('2025-01-20', '15:00', 60);
+
+      // staff-1の予約は14:00-15:00なので、15:00-16:00は空いている
+      expect(result).toEqual({ found: true, staffId: 'staff-1' });
+    });
+  });
+
+  describe('checkUserReservationConflicts', () => {
+    it('重複がない場合、正常に完了する', async () => {
+      const mockTx = {
+        bookingReservation: {
+          findMany: jest.fn().mockResolvedValue([]),
+        },
+      } as unknown as Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+      await expect(
+        checkUserReservationConflicts(mockTx, 'user-1', '2025-01-20', '14:00', 60)
+      ).resolves.not.toThrow();
+    });
+
+    it('ユーザーの予約と時間が重複する場合、エラーをスローする', async () => {
+      const mockTx = {
+        bookingReservation: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              reservedTime: '14:00',
+              menu: { duration: 60 },
+            },
+          ]),
+        },
+      } as unknown as Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+      await expect(
+        checkUserReservationConflicts(mockTx, 'user-1', '2025-01-20', '14:30', 60)
+      ).rejects.toThrow('既にこの時間帯に予約があります');
+    });
+
+    it('時間が重複しない場合、正常に完了する', async () => {
+      const mockTx = {
+        bookingReservation: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              reservedTime: '14:00',
+              menu: { duration: 60 }, // 14:00-15:00
+            },
+          ]),
+        },
+      } as unknown as Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+      // 15:00-16:00の予約（重複しない）
+      await expect(
+        checkUserReservationConflicts(mockTx, 'user-1', '2025-01-20', '15:00', 60)
+      ).resolves.not.toThrow();
+    });
+  });
+
+  describe('checkStaffReservationConflicts', () => {
+    it('重複がない場合、正常に完了する', async () => {
+      const mockTx = {
+        bookingReservation: {
+          findMany: jest.fn().mockResolvedValue([]),
+        },
+      } as unknown as Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+      await expect(
+        checkStaffReservationConflicts(mockTx, 'staff-1', '2025-01-20', '14:00', 60)
+      ).resolves.not.toThrow();
+    });
+
+    it('スタッフの予約と時間が重複する場合、エラーをスローする', async () => {
+      const mockTx = {
+        bookingReservation: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              reservedTime: '14:00',
+              menu: { duration: 60 },
+            },
+          ]),
+        },
+      } as unknown as Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+      await expect(
+        checkStaffReservationConflicts(mockTx, 'staff-1', '2025-01-20', '14:30', 60)
+      ).rejects.toThrow('選択されたスタッフは指定時間帯に対応できません');
+    });
+
+    it('時間が重複しない場合、正常に完了する', async () => {
+      const mockTx = {
+        bookingReservation: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              reservedTime: '14:00',
+              menu: { duration: 60 }, // 14:00-15:00
+            },
+          ]),
+        },
+      } as unknown as Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+      // 15:00-16:00の予約（重複しない）
+      await expect(
+        checkStaffReservationConflicts(mockTx, 'staff-1', '2025-01-20', '15:00', 60)
+      ).resolves.not.toThrow();
+    });
+  });
+
+  describe('checkGeneralReservationConflicts', () => {
+    it('重複がない場合、正常に完了する', async () => {
+      const mockTx = {
+        bookingReservation: {
+          findMany: jest.fn().mockResolvedValue([]),
+        },
+      } as unknown as Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+      await expect(
+        checkGeneralReservationConflicts(mockTx, '2025-01-20', '14:00', 60)
+      ).resolves.not.toThrow();
+    });
+
+    it('全体の予約と時間が重複する場合、エラーをスローする', async () => {
+      const mockTx = {
+        bookingReservation: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              reservedTime: '14:00',
+              menu: { duration: 60 },
+            },
+          ]),
+        },
+      } as unknown as Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+      await expect(
+        checkGeneralReservationConflicts(mockTx, '2025-01-20', '14:30', 60)
+      ).rejects.toThrow('この時間は既に予約済みです');
+    });
+
+    it('時間が重複しない場合、正常に完了する', async () => {
+      const mockTx = {
+        bookingReservation: {
+          findMany: jest.fn().mockResolvedValue([
+            {
+              reservedTime: '14:00',
+              menu: { duration: 60 }, // 14:00-15:00
+            },
+          ]),
+        },
+      } as unknown as Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+      // 15:00-16:00の予約（重複しない）
+      await expect(
+        checkGeneralReservationConflicts(mockTx, '2025-01-20', '15:00', 60)
+      ).resolves.not.toThrow();
+    });
+  });
+
+  describe('エッジケース', () => {
+    it('findAvailableStaff: 複数のスタッフがいて、最初のスタッフが空いている場合', async () => {
+      mockBookingStaffFindMany.mockResolvedValue([
+        { id: 'staff-1' },
+        { id: 'staff-2' },
+        { id: 'staff-3' },
+      ] as never);
+
+      mockBookingReservationFindMany.mockResolvedValue([] as never);
+
+      const result = await findAvailableStaff('2025-01-20', '14:00', 60);
+
+      expect(result).toEqual({ found: true, staffId: 'staff-1' });
+    });
+
+    it('checkUserReservationConflicts: 複数の予約があるが、いずれも重複しない場合', async () => {
+      const mockTx = {
+        bookingReservation: {
+          findMany: jest.fn().mockResolvedValue([
+            { reservedTime: '09:00', menu: { duration: 60 } }, // 09:00-10:00
+            { reservedTime: '11:00', menu: { duration: 60 } }, // 11:00-12:00
+            { reservedTime: '16:00', menu: { duration: 60 } }, // 16:00-17:00
+          ]),
+        },
+      } as unknown as Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+      // 14:00-15:00の予約（どの予約とも重複しない）
+      await expect(
+        checkUserReservationConflicts(mockTx, 'user-1', '2025-01-20', '14:00', 60)
+      ).resolves.not.toThrow();
+    });
+  });
+});
