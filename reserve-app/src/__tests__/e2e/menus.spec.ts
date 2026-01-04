@@ -69,7 +69,7 @@ test.describe('メニュー一覧表示', () => {
    *   Then 予約ページ"/booking"にリダイレクトされる
    *   And メニューIDがクエリパラメータに含まれている
    */
-  test('メニューから予約ページへ遷移できる @smoke', async () => {
+  test('メニューから予約ページへ遷移できる', async () => {
     // Given: メニュー一覧ページにアクセスしている
     await menusPage.goto();
 

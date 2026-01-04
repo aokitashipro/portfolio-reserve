@@ -15,7 +15,7 @@ test.describe('User Authentication', () => {
   };
 
   test.describe('User Registration (#5)', () => {
-    test('should successfully register a new user @smoke', async ({ page }) => {
+    test('should successfully register a new user', async ({ page }) => {
       const registerPage = new RegisterPage(page);
 
       // Given: 新規登録ページにアクセスしている
@@ -143,7 +143,7 @@ test.describe('User Authentication', () => {
       await loginPage.expectError('メールアドレスまたはパスワードが正しくありません');
     });
 
-    test('should have link to registration page', async ({ page }) => {
+    test('should have link to registration page @smoke', async ({ page }) => {
       const loginPage = new LoginPage(page);
 
       // Given: ログインページにアクセスしている
