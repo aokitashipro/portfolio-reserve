@@ -84,7 +84,7 @@ export default function BlockedTimeForm({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50"
       onClick={handleOverlayClick}
     >
       <div

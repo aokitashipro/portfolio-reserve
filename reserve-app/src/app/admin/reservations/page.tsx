@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import AdminSidebar from '@/components/AdminSidebar';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
+import { useAuthFetch, extractErrorMessage } from '@/hooks/useAuthFetch';
 
 interface Reservation {
   id: string;
@@ -35,6 +36,7 @@ const BREAK_TIME_START = '12:00';
 const BREAK_TIME_END = '13:00';
 
 export default function AdminReservationsPage() {
+  const { authFetch } = useAuthFetch();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,28 +87,29 @@ export default function AdminReservationsPage() {
     localStorage.setItem('adminReservationsViewMode', viewMode);
   }, [viewMode]);
 
-  useEffect(() => {
-    fetchReservations();
-  }, []);
-
-  const fetchReservations = async () => {
+  const fetchReservations = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/reservations');
+      const response = await authFetch('/api/admin/reservations');
       const result = await response.json();
 
       if (result.success) {
-        setReservations(result.data);
+        // APIレスポンスは { data: [...], pagination: {...} } の構造
+        setReservations(result.data?.data || []);
       } else {
-        setError(result.error?.message || result.error || 'データの取得に失敗しました');
+        setError(extractErrorMessage(result.error) || 'データの取得に失敗しました');
       }
     } catch (err) {
-      setError('ネットワークエラーが発生しました');
+      setError(err instanceof Error ? err.message : 'ネットワークエラーが発生しました');
       console.error('Reservations fetch error:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [authFetch]);
+
+  useEffect(() => {
+    fetchReservations();
+  }, [fetchReservations]);
 
   const handleAddReservation = () => {
     setPrefilledDate('');
@@ -145,9 +148,8 @@ export default function AdminReservationsPage() {
         throw new Error('必須項目を入力してください');
       }
 
-      const response = await fetch('/api/admin/reservations', {
+      const response = await authFetch('/api/admin/reservations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
 
@@ -158,7 +160,7 @@ export default function AdminReservationsPage() {
         closeModals();
         fetchReservations();
       } else {
-        throw new Error(result.error || '予約の追加に失敗しました');
+        throw new Error(extractErrorMessage(result.error) || '予約の追加に失敗しました');
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : '予期しないエラーが発生しました';
@@ -170,9 +172,8 @@ export default function AdminReservationsPage() {
     try {
       if (!selectedReservation) return;
 
-      const response = await fetch(`/api/admin/reservations/${selectedReservation.id}`, {
+      const response = await authFetch(`/api/admin/reservations/${selectedReservation.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
 
@@ -183,7 +184,7 @@ export default function AdminReservationsPage() {
         closeModals();
         fetchReservations();
       } else {
-        throw new Error(result.error || '予約の更新に失敗しました');
+        throw new Error(extractErrorMessage(result.error) || '予約の更新に失敗しました');
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : '予期しないエラーが発生しました';
@@ -195,7 +196,7 @@ export default function AdminReservationsPage() {
     try {
       if (!selectedReservation) return;
 
-      const response = await fetch(`/api/admin/reservations/${selectedReservation.id}`, {
+      const response = await authFetch(`/api/admin/reservations/${selectedReservation.id}`, {
         method: 'DELETE',
       });
 
@@ -206,7 +207,7 @@ export default function AdminReservationsPage() {
         closeModals();
         fetchReservations();
       } else {
-        throw new Error(result.error || '予約の削除に失敗しました');
+        throw new Error(extractErrorMessage(result.error) || '予約の削除に失敗しました');
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : '予期しないエラーが発生しました';
