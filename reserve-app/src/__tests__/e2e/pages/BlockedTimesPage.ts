@@ -118,7 +118,7 @@ export class BlockedTimesPage {
   /**
    * 特定のブロックが表示されることを検証
    */
-  async expectBlockedTimeVisible(startDateTime: string, _endDateTime: string) {
+  async expectBlockedTimeVisible(startDateTime: string) {
     const card = this.page.locator(this.selectors.blockedTimeCard).filter({
       has: this.page.locator(this.selectors.startDateTime, { hasText: startDateTime }),
     });
@@ -353,8 +353,8 @@ export class BlockedTimesPage {
   /**
    * ブロックが一覧に追加されたことを検証
    */
-  async expectBlockAdded(startDateTime: string, endDateTime: string) {
-    await this.expectBlockedTimeVisible(startDateTime, endDateTime);
+  async expectBlockAdded(startDateTime: string) {
+    await this.expectBlockedTimeVisible(startDateTime);
   }
 
   /**
@@ -376,7 +376,7 @@ export class BlockedTimesPage {
     reason?: string,
     description?: string
   ) {
-    await this.expectBlockedTimeVisible(startDateTime, endDateTime);
+    await this.expectBlockedTimeVisible(startDateTime);
     if (reason || description) {
       await this.expectBlockedTimeDetails(startDateTime, endDateTime, reason || '', description);
     }

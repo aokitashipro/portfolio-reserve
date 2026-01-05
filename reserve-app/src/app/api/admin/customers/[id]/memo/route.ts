@@ -25,7 +25,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'demo-restaurant';
+    const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || 'demo-booking';
 
     // バリデーション
     const validation = updateMemoSchema.safeParse(body);
@@ -57,6 +57,7 @@ export async function PATCH(
     const updatedCustomer = await prisma.bookingUser.update({
       where: {
         id,
+        tenantId,
       },
       data: {
         memo: memo || '',
