@@ -2,7 +2,26 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { supabase } from '@/lib/supabase';
-import type { FeatureFlagKey } from '@/lib/feature-flags-config';
+import { z } from 'zod';
+
+/**
+ * フィーチャーフラグ更新用のバリデーションスキーマ
+ */
+const featureFlagsUpdateSchema = z.object({
+  tenantId: z.string().min(1, 'tenantIdは必須です'),
+  featureFlags: z.object({
+    enableStaffSelection: z.boolean().optional(),
+    enableStaffShiftManagement: z.boolean().optional(),
+    enableCustomerManagement: z.boolean().optional(),
+    enableReservationUpdate: z.boolean().optional(),
+    enableReminderEmail: z.boolean().optional(),
+    enableManualReservation: z.boolean().optional(),
+    enableAnalyticsReport: z.boolean().optional(),
+    enableRepeatRateAnalysis: z.boolean().optional(),
+    enableCouponFeature: z.boolean().optional(),
+    enableLineNotification: z.boolean().optional(),
+  }),
+});
 
 /**
  * スーパー管理者のロールをチェック
@@ -140,14 +159,19 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tenantId, featureFlags } = body;
 
-    if (!tenantId || !featureFlags) {
+    // Zodバリデーション
+    const validation = featureFlagsUpdateSchema.safeParse(body);
+    if (!validation.success) {
       return errorResponse(
-        'tenantIdとfeatureFlagsパラメータが必要です',
-        400
+        'バリデーションエラー',
+        400,
+        'VALIDATION_ERROR',
+        validation.error.issues
       );
     }
+
+    const { tenantId, featureFlags } = validation.data;
 
     // FeatureFlagをupsert（存在しなければ作成、存在すれば更新）
     const updatedFeatureFlag = await prisma.featureFlag.upsert({

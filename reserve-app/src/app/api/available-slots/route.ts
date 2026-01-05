@@ -163,8 +163,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Get menu details
-    const menu = await prisma.bookingMenu.findUnique({
-      where: { id: menuId },
+    const menu = await prisma.bookingMenu.findFirst({
+      where: {
+        id: menuId,
+        tenantId: TENANT_ID,
+      },
       select: { duration: true },
     });
 

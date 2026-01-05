@@ -51,7 +51,7 @@ test.describe.serial('予約ブロック管理', () => {
     await blockedTimesPage.expectSuccessMessage('予約ブロックを追加しました');
 
     // ブロックが一覧に表示される
-    await blockedTimesPage.expectBlockAdded('2026-01-15 14:00', '2026-01-15 15:00');
+    await blockedTimesPage.expectBlockAdded('2026-01-15 14:00');
     await blockedTimesPage.expectBlockedTimeDetails(
       '2026-01-15 14:00',
       '2026-01-15 15:00',
@@ -262,10 +262,10 @@ test.describe.serial('予約ブロック管理', () => {
     expect(count).toBe(2);
 
     // 2026-01-15のブロックが表示される
-    await blockedTimesPage.expectBlockedTimeVisible('2026-01-15 14:00', '2026-01-15 15:00');
+    await blockedTimesPage.expectBlockedTimeVisible('2026-01-15 14:00');
 
     // 2026-01-20のブロックが表示される
-    await blockedTimesPage.expectBlockedTimeVisible('2026-01-20 09:00', '2026-01-20 18:00');
+    await blockedTimesPage.expectBlockedTimeVisible('2026-01-20 09:00');
 
     // 2026-02-05のブロックは表示されない
     await blockedTimesPage.expectBlockDeleted('2026-02-05 10:00');

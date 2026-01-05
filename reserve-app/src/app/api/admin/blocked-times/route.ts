@@ -1,8 +1,43 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminApiAuth } from '@/lib/admin-api-auth';
+import { successResponse, errorResponse } from '@/lib/api-response';
+import { z } from 'zod';
 
 const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || 'demo-booking';
+
+/**
+ * 予約ブロック作成用のバリデーションスキーマ
+ */
+const blockedTimeCreateSchema = z
+  .object({
+    startDateTime: z.string().min(1, '開始日時は必須です'),
+    endDateTime: z.string().min(1, '終了日時は必須です'),
+    reason: z.string().optional(),
+    description: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      const start = new Date(data.startDateTime);
+      const end = new Date(data.endDateTime);
+      return !isNaN(start.getTime()) && !isNaN(end.getTime());
+    },
+    {
+      message: '有効な日時形式で入力してください',
+      path: ['startDateTime'],
+    }
+  )
+  .refine(
+    (data) => {
+      const start = new Date(data.startDateTime);
+      const end = new Date(data.endDateTime);
+      return end > start;
+    },
+    {
+      message: '終了日時は開始日時より後にしてください',
+      path: ['endDateTime'],
+    }
+  );
 
 /**
  * GET /api/admin/blocked-times
@@ -46,19 +81,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: blockedTimes,
-    });
+    return successResponse(blockedTimes, 200);
   } catch (error) {
     console.error('Failed to fetch blocked times:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to fetch blocked times',
-      },
-      { status: 500 }
-    );
+    return errorResponse('予約ブロック一覧の取得に失敗しました', 500, 'INTERNAL_ERROR');
   }
 }
 
@@ -72,31 +98,21 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { startDateTime, endDateTime, reason, description } = body;
 
-    // バリデーション
-    if (!startDateTime || !endDateTime) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '開始日時と終了日時は必須です',
-        },
-        { status: 400 }
+    // Zodバリデーション
+    const validation = blockedTimeCreateSchema.safeParse(body);
+    if (!validation.success) {
+      return errorResponse(
+        'バリデーションエラー',
+        400,
+        'VALIDATION_ERROR',
+        validation.error.issues
       );
     }
 
+    const { startDateTime, endDateTime, reason, description } = validation.data;
     const start = new Date(startDateTime);
     const end = new Date(endDateTime);
-
-    if (end <= start) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '終了日時は開始日時より後にしてください',
-        },
-        { status: 400 }
-      );
-    }
 
     // 予約ブロックを作成
     const blockedTime = await prisma.bookingBlockedTimeSlot.create({
@@ -109,19 +125,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: blockedTime,
-      message: '予約ブロックを追加しました',
-    });
+    return successResponse(
+      { ...blockedTime, message: '予約ブロックを追加しました' },
+      201
+    );
   } catch (error) {
     console.error('Failed to create blocked time:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: '予約ブロックの追加に失敗しました',
-      },
-      { status: 500 }
-    );
+    return errorResponse('予約ブロックの追加に失敗しました', 500, 'INTERNAL_ERROR');
   }
 }
