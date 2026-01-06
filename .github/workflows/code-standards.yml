@@ -606,3 +606,287 @@ jobs:
           else
             echo "⚠️ カバレッジレポートが見つかりません"
           fi
+
+  # =========================================
+  # Job 12: TODO/FIXMEチェック
+  # =========================================
+  todo-check:
+    name: TODO/FIXME Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for TODO/FIXME in production code
+        run: |
+          echo "🔍 本番コード内のTODO/FIXMEをチェック中..."
+
+          # テストファイル以外のTODO/FIXMEを検出
+          TODOS=$(grep -rn "TODO\|FIXME\|HACK\|XXX" reserve-app/src/ \
+            --include="*.ts" --include="*.tsx" \
+            --exclude-dir="__tests__" \
+            --exclude="*.spec.ts" --exclude="*.test.ts" 2>/dev/null || echo "")
+
+          if [ -n "$TODOS" ]; then
+            echo "============================================"
+            echo "⚠️ 本番コードにTODO/FIXMEがあります"
+            echo "============================================"
+            echo "$TODOS"
+            echo ""
+            echo "📖 対応方法:"
+            echo "  - TODOを解決するか、Issueに登録して削除"
+            echo "  - FIXMEは優先的に修正"
+            echo ""
+            TODO_COUNT=$(echo "$TODOS" | wc -l)
+            echo "検出数: $TODO_COUNT 件"
+            echo "⚠️ 警告として扱います"
+            # exit 1
+          else
+            echo "✅ 本番コードにTODO/FIXMEはありません"
+          fi
+
+  # =========================================
+  # Job 13: 複雑度チェック
+  # =========================================
+  complexity-check:
+    name: Code Complexity Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: reserve-app
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: reserve-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check code complexity with ESLint
+        run: |
+          echo "🔍 コード複雑度をチェック中..."
+
+          # ESLintで複雑度チェック（complexity: 15を超えたら警告）
+          npx eslint src/ \
+            --rule 'complexity: ["warn", 15]' \
+            --rule 'max-depth: ["warn", 4]' \
+            --rule 'max-params: ["warn", 5]' \
+            --rule 'max-lines-per-function: ["warn", { "max": 60, "skipBlankLines": true, "skipComments": true }]' \
+            --format stylish \
+            --no-error-on-unmatched-pattern || true
+
+          echo ""
+          echo "📖 複雑度の目安:"
+          echo "  - サイクロマティック複雑度: 10以下推奨（警告: 15以上）"
+          echo "  - ネスト深度: 3以下推奨（警告: 4以上）"
+          echo "  - パラメータ数: 4以下推奨（警告: 5以上）"
+          echo "  - 関数行数: 50行以下推奨（警告: 60行以上）"
+          echo ""
+          echo "✅ 複雑度チェック完了（警告のみ）"
+
+  # =========================================
+  # Job 14: エラーメッセージ漏洩チェック
+  # =========================================
+  error-leak-check:
+    name: Error Message Leak Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for error message leaks
+        run: |
+          echo "🔍 エラーメッセージ漏洩をチェック中..."
+
+          LEAKS=""
+
+          # error.messageを直接レスポンスに含めていないか
+          if grep -rn "error\.message\|error\.stack" reserve-app/src/app/api/ --include="*.ts" 2>/dev/null | grep -v "console\.\|log\.\|logger\." | grep "Response\|json\|NextResponse"; then
+            LEAKS="${LEAKS}⚠️ error.message/stackをレスポンスに含めている可能性\n"
+          fi
+
+          # catchブロックでerrorを直接返していないか
+          if grep -rn "catch.*error.*{" -A 3 reserve-app/src/app/api/ --include="*.ts" 2>/dev/null | grep "json.*error\b" | grep -v "error:" | grep -v "'error'\|\"error\""; then
+            LEAKS="${LEAKS}⚠️ catchブロックでerrorオブジェクトを直接返している可能性\n"
+          fi
+
+          if [ -n "$LEAKS" ]; then
+            echo "============================================"
+            echo "⚠️ エラーメッセージ漏洩の可能性"
+            echo "============================================"
+            echo -e "$LEAKS"
+            echo ""
+            echo "📖 安全なパターン:"
+            echo "  catch (error) {"
+            echo "    console.error('Internal error:', error);"
+            echo "    return Response.json({ error: 'An error occurred' }, { status: 500 });"
+            echo "  }"
+            echo ""
+            echo "⚠️ 警告として扱います（手動確認推奨）"
+            # exit 1
+          else
+            echo "✅ 明らかなエラーメッセージ漏洩は検出されませんでした"
+          fi
+
+  # =========================================
+  # Job 15: クライアント環境変数チェック
+  # =========================================
+  client-env-check:
+    name: Client Environment Variable Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for non-public env vars in client code
+        run: |
+          echo "🔍 クライアントコードでの非公開環境変数使用をチェック中..."
+
+          VIOLATIONS=""
+
+          # 'use client'ファイルでprocess.env.を使用しているかチェック
+          for file in $(grep -rl "'use client'\|\"use client\"" reserve-app/src/ --include="*.tsx" --include="*.ts" 2>/dev/null); do
+            # NEXT_PUBLIC_以外のprocess.env.を検出
+            if grep -n "process\.env\." "$file" 2>/dev/null | grep -v "NEXT_PUBLIC_" | grep -v "NODE_ENV"; then
+              VIOLATIONS="${VIOLATIONS}❌ $file: 非公開環境変数をクライアントで使用\n"
+            fi
+          done
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo "============================================"
+            echo "🚨 セキュリティ警告: 非公開環境変数のクライアント使用"
+            echo "============================================"
+            echo -e "$VIOLATIONS"
+            echo ""
+            echo "📖 対応方法:"
+            echo "  - 秘密鍵はサーバーサイドのみで使用"
+            echo "  - クライアントで必要な場合はNEXT_PUBLIC_プレフィックスを使用"
+            echo "  - 参考: .claude/skills/typescript-security-checker/references/security-checklist.md"
+            echo ""
+            echo "⚠️ 警告として扱います"
+            # exit 1
+          else
+            echo "✅ クライアントコードでの非公開環境変数使用は検出されませんでした"
+          fi
+
+  # =========================================
+  # Job 16: コマンドインジェクションチェック
+  # =========================================
+  command-injection-check:
+    name: Command Injection Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for child_process usage
+        run: |
+          echo "🔍 コマンドインジェクションリスクをチェック中..."
+
+          RISKS=""
+
+          # child_process.exec/execSync の使用をチェック
+          if grep -rn "child_process\|require('child_process')\|from 'child_process'" reserve-app/src/ --include="*.ts" --include="*.tsx" 2>/dev/null; then
+            RISKS="${RISKS}❌ child_processモジュールの使用を検出\n"
+          fi
+
+          # exec/execSync の直接使用をチェック
+          if grep -rn "exec(\|execSync(\|spawn(\|spawnSync(" reserve-app/src/ --include="*.ts" --include="*.tsx" 2>/dev/null; then
+            RISKS="${RISKS}❌ シェルコマンド実行関数の使用を検出\n"
+          fi
+
+          if [ -n "$RISKS" ]; then
+            echo "============================================"
+            echo "🚨 コマンドインジェクションリスク"
+            echo "============================================"
+            echo -e "$RISKS"
+            echo ""
+            echo "📖 対応方法:"
+            echo "  - child_processの使用を避ける"
+            echo "  - 必要な場合はexecFileでパラメータ化"
+            echo "  - ユーザー入力をシェルコマンドに含めない"
+            echo ""
+            echo "⚠️ 警告として扱います（手動確認必須）"
+            # exit 1
+          else
+            echo "✅ コマンドインジェクションリスクは検出されませんでした"
+          fi
+
+  # =========================================
+  # Job 17: セキュリティヘッダーチェック
+  # =========================================
+  security-headers-check:
+    name: Security Headers Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for security headers in next.config
+        run: |
+          echo "🔍 セキュリティヘッダー設定をチェック中..."
+
+          MISSING=""
+          CONFIG_FILE=""
+
+          # next.config.ts または next.config.js を探す
+          if [ -f "reserve-app/next.config.ts" ]; then
+            CONFIG_FILE="reserve-app/next.config.ts"
+          elif [ -f "reserve-app/next.config.js" ]; then
+            CONFIG_FILE="reserve-app/next.config.js"
+          elif [ -f "reserve-app/next.config.mjs" ]; then
+            CONFIG_FILE="reserve-app/next.config.mjs"
+          fi
+
+          if [ -z "$CONFIG_FILE" ]; then
+            echo "⚠️ next.configファイルが見つかりません"
+            exit 0
+          fi
+
+          echo "チェック対象: $CONFIG_FILE"
+
+          # 必須セキュリティヘッダーの存在確認
+          if ! grep -q "X-Frame-Options" "$CONFIG_FILE" 2>/dev/null; then
+            MISSING="${MISSING}  - X-Frame-Options（クリックジャッキング対策）\n"
+          fi
+
+          if ! grep -q "X-Content-Type-Options" "$CONFIG_FILE" 2>/dev/null; then
+            MISSING="${MISSING}  - X-Content-Type-Options（MIMEスニッフィング対策）\n"
+          fi
+
+          if ! grep -q "Strict-Transport-Security\|HSTS" "$CONFIG_FILE" 2>/dev/null; then
+            MISSING="${MISSING}  - Strict-Transport-Security（HTTPS強制）\n"
+          fi
+
+          if ! grep -q "Content-Security-Policy\|CSP" "$CONFIG_FILE" 2>/dev/null; then
+            MISSING="${MISSING}  - Content-Security-Policy（XSS対策）\n"
+          fi
+
+          if ! grep -q "Referrer-Policy" "$CONFIG_FILE" 2>/dev/null; then
+            MISSING="${MISSING}  - Referrer-Policy（リファラー制御）\n"
+          fi
+
+          if [ -n "$MISSING" ]; then
+            echo "============================================"
+            echo "⚠️ セキュリティヘッダーが不足しています"
+            echo "============================================"
+            echo -e "$MISSING"
+            echo ""
+            echo "📖 参考: documents/spec/セキュリティ設計書.md"
+            echo "⚠️ 警告として扱います"
+            # exit 1
+          else
+            echo "✅ 必須セキュリティヘッダーが設定されています"
+          fi
