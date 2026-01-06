@@ -59,7 +59,8 @@ export default defineConfig({
       // CI環境では親プロセスから継承、ローカルではダミー値
       DATABASE_URL: process.env.DATABASE_URL || 'postgresql://dummy:dummy@localhost:5432/dummy',
       NEXT_PUBLIC_TENANT_ID: process.env.NEXT_PUBLIC_TENANT_ID || 'demo-booking',
-      SKIP_AUTH_IN_TEST: 'true', // E2Eテスト時に認証をスキップ
+      SKIP_AUTH_IN_TEST: 'true', // E2Eテスト時に認証をスキップ（サーバーサイド用）
+      NEXT_PUBLIC_SKIP_AUTH_IN_TEST: 'true', // E2Eテスト時に認証をスキップ（クライアントサイド用）
       // Sentryを無効化（テスト環境）
       NEXT_PUBLIC_SENTRY_DSN: '',
     },
