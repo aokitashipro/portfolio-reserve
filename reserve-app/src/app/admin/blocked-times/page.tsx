@@ -36,13 +36,24 @@ export default function BlockedTimesPage() {
 
   // アクセストークンを取得するヘルパー
   const getAuthHeaders = useCallback(async () => {
+    // テスト環境では認証をスキップ
+    const skipAuth = process.env.NEXT_PUBLIC_SKIP_AUTH_IN_TEST === 'true';
+
+    if (skipAuth) {
+      return {
+        'Content-Type': 'application/json',
+      };
+    }
+
     const supabase = createSupabaseBrowserClient();
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session?.access_token) {
       throw new Error('認証が必要です。再度ログインしてください。');
     }
     return {
-      'Authorization': `Bearer ${session.access_token}`,
+      Authorization: `Bearer ${session.access_token}`,
       'Content-Type': 'application/json',
     };
   }, []);

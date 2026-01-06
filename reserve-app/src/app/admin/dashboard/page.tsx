@@ -47,19 +47,27 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
 
-      // セッションからアクセストークンを取得
-      const supabase = createSupabaseBrowserClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      // テスト環境では認証をスキップ
+      const skipAuth = process.env.NEXT_PUBLIC_SKIP_AUTH_IN_TEST === 'true';
+      const headers: Record<string, string> = {};
 
-      if (!session?.access_token) {
-        setError('認証が必要です。再度ログインしてください。');
-        return;
+      if (!skipAuth) {
+        // セッションからアクセストークンを取得
+        const supabase = createSupabaseBrowserClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          setError('認証が必要です。再度ログインしてください。');
+          return;
+        }
+
+        headers['Authorization'] = `Bearer ${session.access_token}`;
       }
 
       const response = await fetch('/api/admin/stats', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
+        headers,
       });
       const result = await response.json();
 
