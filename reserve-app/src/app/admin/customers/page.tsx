@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminSidebar from '@/components/AdminSidebar';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
+import { useAuthFetch, extractErrorMessage } from '@/hooks/useAuthFetch';
 
 interface Customer {
   id: string;
@@ -22,6 +23,7 @@ type SortOrder = 'asc' | 'desc';
 
 export default function AdminCustomersPage() {
   const router = useRouter();
+  const { authFetch } = useAuthFetch();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,12 +31,7 @@ export default function AdminCustomersPage() {
   const [sortBy, setSortBy] = useState<SortBy>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
-  useEffect(() => {
-    fetchCustomers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, sortBy, sortOrder]);
-
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -46,10 +43,11 @@ export default function AdminCustomersPage() {
       params.append('sortBy', sortBy);
       params.append('sortOrder', sortOrder);
 
-      const response = await fetch(`/api/admin/customers?${params.toString()}`);
+      const response = await authFetch(`/api/admin/customers?${params.toString()}`);
 
       if (!response.ok) {
-        throw new Error('顧客一覧の取得に失敗しました');
+        const result = await response.json();
+        throw new Error(extractErrorMessage(result.error) || '顧客一覧の取得に失敗しました');
       }
 
       const result = await response.json();
@@ -57,7 +55,7 @@ export default function AdminCustomersPage() {
       if (result.success) {
         setCustomers(result.data);
       } else {
-        throw new Error(result.error?.message || '顧客一覧の取得に失敗しました');
+        throw new Error(extractErrorMessage(result.error) || '顧客一覧の取得に失敗しました');
       }
     } catch (err) {
       console.error('Failed to fetch customers:', err);
@@ -65,7 +63,11 @@ export default function AdminCustomersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [authFetch, searchQuery, sortBy, sortOrder]);
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
 
   const handleCustomerClick = (customerId: string) => {
     router.push(`/admin/customers/${customerId}`);

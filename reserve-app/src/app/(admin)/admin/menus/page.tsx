@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import AdminSidebar from '@/components/AdminSidebar';
+import { useAuthFetch, extractErrorMessage } from '@/hooks/useAuthFetch';
 
 /**
  * メニュー管理ページ
@@ -38,6 +40,7 @@ type MenuFormData = {
 };
 
 export default function MenusPage() {
+  const { authFetch } = useAuthFetch();
   const [menus, setMenus] = useState<Menu[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -55,25 +58,31 @@ export default function MenusPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [pageLoading, setPageLoading] = useState(true);
 
-  const fetchMenus = async () => {
+  const fetchMenus = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/menus');
+      setPageLoading(true);
+      const response = await authFetch('/api/admin/menus');
       if (response.ok) {
         const data = await response.json();
         setMenus(data.data);
+      } else {
+        const result = await response.json();
+        setErrorMessage(extractErrorMessage(result.error) || 'メニュー一覧の取得に失敗しました');
       }
     } catch (error) {
       console.error('メニュー一覧の取得に失敗しました:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'メニュー一覧の取得に失敗しました');
+    } finally {
+      setPageLoading(false);
     }
-  };
+  }, [authFetch]);
 
   // メニュー一覧を取得
   useEffect(() => {
-    // Data fetching on mount is an acceptable use case for setState in useEffect
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMenus();
-  }, []);
+  }, [fetchMenus]);
 
   // 検索とフィルター - useMemoで計算
   const filteredMenus = useMemo(() => {
@@ -151,11 +160,8 @@ export default function MenusPage() {
     }
 
     try {
-      const response = await fetch('/api/admin/menus', {
+      const response = await authFetch('/api/admin/menus', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           name: formData.name,
           price: parseInt(formData.price),
@@ -171,12 +177,12 @@ export default function MenusPage() {
         fetchMenus();
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
-        const error = await response.json();
-        setErrorMessage(error.message || 'メニューの追加に失敗しました');
+        const result = await response.json();
+        setErrorMessage(extractErrorMessage(result.error) || 'メニューの追加に失敗しました');
       }
     } catch (error) {
       console.error('メニュー追加エラー:', error);
-      setErrorMessage('メニューの追加に失敗しました');
+      setErrorMessage(error instanceof Error ? error.message : 'メニューの追加に失敗しました');
     }
   };
 
@@ -186,11 +192,8 @@ export default function MenusPage() {
     }
 
     try {
-      const response = await fetch(`/api/admin/menus/${selectedMenu.id}`, {
+      const response = await authFetch(`/api/admin/menus/${selectedMenu.id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           name: formData.name,
           price: parseInt(formData.price),
@@ -206,12 +209,12 @@ export default function MenusPage() {
         fetchMenus();
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
-        const error = await response.json();
-        setErrorMessage(error.message || 'メニューの更新に失敗しました');
+        const result = await response.json();
+        setErrorMessage(extractErrorMessage(result.error) || 'メニューの更新に失敗しました');
       }
     } catch (error) {
       console.error('メニュー更新エラー:', error);
-      setErrorMessage('メニューの更新に失敗しました');
+      setErrorMessage(error instanceof Error ? error.message : 'メニューの更新に失敗しました');
     }
   };
 
@@ -219,7 +222,7 @@ export default function MenusPage() {
     if (!selectedMenu) return;
 
     try {
-      const response = await fetch(`/api/admin/menus/${selectedMenu.id}`, {
+      const response = await authFetch(`/api/admin/menus/${selectedMenu.id}`, {
         method: 'DELETE',
       });
 
@@ -229,22 +232,19 @@ export default function MenusPage() {
         fetchMenus();
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
-        const error = await response.json();
-        setErrorMessage(error.message || 'メニューの削除に失敗しました');
+        const result = await response.json();
+        setErrorMessage(extractErrorMessage(result.error) || 'メニューの削除に失敗しました');
       }
     } catch (error) {
       console.error('メニュー削除エラー:', error);
-      setErrorMessage('メニューの削除に失敗しました');
+      setErrorMessage(error instanceof Error ? error.message : 'メニューの削除に失敗しました');
     }
   };
 
   const toggleMenuActive = async (menu: Menu) => {
     try {
-      const response = await fetch(`/api/admin/menus/${menu.id}`, {
+      const response = await authFetch(`/api/admin/menus/${menu.id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           isActive: !menu.isActive,
         }),
@@ -255,64 +255,84 @@ export default function MenusPage() {
         setSuccessMessage(message);
         fetchMenus();
         setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        const result = await response.json();
+        setErrorMessage(extractErrorMessage(result.error) || 'メニュー状態の変更に失敗しました');
       }
     } catch (error) {
       console.error('メニュー状態変更エラー:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'メニュー状態の変更に失敗しました');
     }
   };
 
-  return (
-    <div className="container mx-auto p-6">
-      {/* ページタイトル */}
-      <h1 data-testid="page-title" className="text-2xl font-bold mb-6">
-        メニュー管理
-      </h1>
-
-      {/* 成功メッセージ */}
-      {successMessage && (
-        <div data-testid="success-message" className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {successMessage}
-        </div>
-      )}
-
-      {/* エラーメッセージ */}
-      {errorMessage && (
-        <div data-testid="error-message" className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {errorMessage}
-        </div>
-      )}
-
-      {/* 検索とフィルター */}
-      <div className="mb-4 flex gap-4">
-        <input
-          type="text"
-          data-testid="search-input"
-          placeholder="メニュー名で検索"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="border px-4 py-2 rounded"
-        />
-        <select
-          data-testid="category-filter"
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className="border px-4 py-2 rounded"
-        >
-          <option value="">すべてのカテゴリ</option>
-          <option value="ヘアケア">ヘアケア</option>
-          <option value="カラー">カラー</option>
-          <option value="パーマ">パーマ</option>
-        </select>
+  if (pageLoading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <AdminSidebar />
+        <main className="ml-64 flex-1 p-8">
+          <div className="flex h-96 items-center justify-center">
+            <div data-testid="loading-message" className="text-gray-500">読み込み中...</div>
+          </div>
+        </main>
       </div>
+    );
+  }
 
-      {/* メニュー追加ボタン */}
-      <button
-        data-testid="add-menu-button"
-        onClick={handleAddMenu}
-        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
-      >
-        メニューを追加
-      </button>
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <AdminSidebar />
+
+      <main className="ml-64 flex-1 p-8">
+        {/* ページタイトル */}
+        <h1 data-testid="page-title" className="text-3xl font-bold text-gray-900 mb-6">
+          メニュー管理
+        </h1>
+
+        {/* 成功メッセージ */}
+        {successMessage && (
+          <div data-testid="success-message" className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {successMessage}
+          </div>
+        )}
+
+        {/* エラーメッセージ */}
+        {errorMessage && (
+          <div data-testid="error-message" className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {errorMessage}
+          </div>
+        )}
+
+        {/* 検索とフィルター */}
+        <div className="mb-4 flex gap-4">
+          <input
+            type="text"
+            data-testid="search-input"
+            placeholder="メニュー名で検索"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="border px-4 py-2 rounded"
+          />
+          <select
+            data-testid="category-filter"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="border px-4 py-2 rounded"
+          >
+            <option value="">すべてのカテゴリ</option>
+            <option value="ヘアケア">ヘアケア</option>
+            <option value="カラー">カラー</option>
+            <option value="パーマ">パーマ</option>
+          </select>
+        </div>
+
+        {/* メニュー追加ボタン */}
+        <button
+          data-testid="add-menu-button"
+          onClick={handleAddMenu}
+          className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
+        >
+          メニューを追加
+        </button>
 
       {/* メニュー一覧 */}
       <div data-testid="menu-list" className="space-y-4">
@@ -383,7 +403,8 @@ export default function MenusPage() {
             )}
           </div>
         ))}
-      </div>
+        </div>
+      </main>
 
       {/* メニュー追加モーダル */}
       {isAddModalOpen && (
