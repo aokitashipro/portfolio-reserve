@@ -53,10 +53,10 @@ describe('useReservations', () => {
     expect(global.fetch).toHaveBeenCalledWith('/api/reservations');
   });
 
-  it.skip('should handle fetch error', async () => {
+  it('should handle HTTP error (response not ok)', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: false,
-      json: async () => ({ success: false, error: { message: 'Failed to fetch' } }),
+      status: 500,
     });
 
     const { result } = renderHook(() => useReservations());
@@ -66,7 +66,45 @@ describe('useReservations', () => {
     });
 
     expect(result.current.reservations).toEqual([]);
-    expect(result.current.error).toBe('Failed to fetch');
+    expect(result.current.error).toBe('予約情報の取得に失敗しました');
+  });
+
+  it('should handle API error (success: false with message)', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: false,
+        error: { message: 'カスタムエラーメッセージ' },
+      }),
+    });
+
+    const { result } = renderHook(() => useReservations());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.reservations).toEqual([]);
+    expect(result.current.error).toBe('カスタムエラーメッセージ');
+  });
+
+  it('should handle API error (success: false without message)', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        success: false,
+        error: {},
+      }),
+    });
+
+    const { result } = renderHook(() => useReservations());
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.reservations).toEqual([]);
+    expect(result.current.error).toBe('予約情報の取得に失敗しました');
   });
 
   it('should handle network error', async () => {

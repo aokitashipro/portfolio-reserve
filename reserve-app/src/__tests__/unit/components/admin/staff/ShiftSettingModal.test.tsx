@@ -156,6 +156,29 @@ describe('ShiftSettingModal', () => {
       fireEvent.click(screen.getByTestId('vacation-tab'));
       expect(mockOnTabChange).toHaveBeenCalledWith('vacation');
     });
+
+    it('シフト設定タブをクリックするとonTabChange("shift")が呼ばれる', () => {
+      render(
+        <ShiftSettingModal
+          staff={mockStaff}
+          activeTab="vacation"
+          shiftFormData={defaultShiftFormData}
+          vacationFormData={defaultVacationFormData}
+          error={null}
+          onTabChange={mockOnTabChange}
+          onShiftFormChange={mockOnShiftFormChange}
+          onVacationFormChange={mockOnVacationFormChange}
+          onShiftSubmit={mockOnShiftSubmit}
+          onVacationSubmit={mockOnVacationSubmit}
+          onClose={mockOnClose}
+        />
+      );
+
+      // シフト設定タブをテキストで取得してクリック
+      const shiftTab = screen.getByRole('button', { name: 'シフト設定' });
+      fireEvent.click(shiftTab);
+      expect(mockOnTabChange).toHaveBeenCalledWith('shift');
+    });
   });
 
   describe('エラー表示', () => {
@@ -244,6 +267,68 @@ describe('ShiftSettingModal', () => {
       expect(mockOnShiftFormChange).toHaveBeenCalled();
     });
 
+    it('開始時間を変更するとonShiftFormChangeが呼ばれる', () => {
+      const enabledShiftFormData: ShiftFormData = {
+        ...defaultShiftFormData,
+        '月曜日': { enabled: true, startTime: '09:00', endTime: '18:00' },
+      };
+
+      render(
+        <ShiftSettingModal
+          staff={mockStaff}
+          activeTab="shift"
+          shiftFormData={enabledShiftFormData}
+          vacationFormData={defaultVacationFormData}
+          error={null}
+          onTabChange={mockOnTabChange}
+          onShiftFormChange={mockOnShiftFormChange}
+          onVacationFormChange={mockOnVacationFormChange}
+          onShiftSubmit={mockOnShiftSubmit}
+          onVacationSubmit={mockOnVacationSubmit}
+          onClose={mockOnClose}
+        />
+      );
+
+      const startTimeInputs = screen.getAllByTestId('shift-start-time');
+      fireEvent.change(startTimeInputs[0], { target: { value: '10:00' } });
+      expect(mockOnShiftFormChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          '月曜日': expect.objectContaining({ startTime: '10:00' }),
+        })
+      );
+    });
+
+    it('終了時間を変更するとonShiftFormChangeが呼ばれる', () => {
+      const enabledShiftFormData: ShiftFormData = {
+        ...defaultShiftFormData,
+        '火曜日': { enabled: true, startTime: '09:00', endTime: '18:00' },
+      };
+
+      render(
+        <ShiftSettingModal
+          staff={mockStaff}
+          activeTab="shift"
+          shiftFormData={enabledShiftFormData}
+          vacationFormData={defaultVacationFormData}
+          error={null}
+          onTabChange={mockOnTabChange}
+          onShiftFormChange={mockOnShiftFormChange}
+          onVacationFormChange={mockOnVacationFormChange}
+          onShiftSubmit={mockOnShiftSubmit}
+          onVacationSubmit={mockOnVacationSubmit}
+          onClose={mockOnClose}
+        />
+      );
+
+      const endTimeInputs = screen.getAllByTestId('shift-end-time');
+      fireEvent.change(endTimeInputs[1], { target: { value: '19:00' } }); // 火曜日は2番目
+      expect(mockOnShiftFormChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          '火曜日': expect.objectContaining({ endTime: '19:00' }),
+        })
+      );
+    });
+
     it('フォームを送信するとonShiftSubmitが呼ばれる', () => {
       render(
         <ShiftSettingModal
@@ -312,6 +397,31 @@ describe('ShiftSettingModal', () => {
       expect(mockOnVacationFormChange).toHaveBeenCalledWith({
         ...defaultVacationFormData,
         endDate: '2025-01-27',
+      });
+    });
+
+    it('休暇理由を変更するとonVacationFormChangeが呼ばれる', () => {
+      render(
+        <ShiftSettingModal
+          staff={mockStaff}
+          activeTab="vacation"
+          shiftFormData={defaultShiftFormData}
+          vacationFormData={defaultVacationFormData}
+          error={null}
+          onTabChange={mockOnTabChange}
+          onShiftFormChange={mockOnShiftFormChange}
+          onVacationFormChange={mockOnVacationFormChange}
+          onShiftSubmit={mockOnShiftSubmit}
+          onVacationSubmit={mockOnVacationSubmit}
+          onClose={mockOnClose}
+        />
+      );
+
+      const textarea = screen.getByRole('textbox');
+      fireEvent.change(textarea, { target: { value: '私用のため' } });
+      expect(mockOnVacationFormChange).toHaveBeenCalledWith({
+        ...defaultVacationFormData,
+        reason: '私用のため',
       });
     });
 
