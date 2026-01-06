@@ -5,6 +5,7 @@ import AdminSidebar from '@/components/AdminSidebar';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 interface Reservation {
   id: string;
@@ -45,13 +46,39 @@ export default function AdminDashboard() {
   const fetchDashboardStats = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/stats');
+
+      // テスト環境では認証をスキップ
+      const skipAuth = process.env.NEXT_PUBLIC_SKIP_AUTH_IN_TEST === 'true';
+      const headers: Record<string, string> = {};
+
+      if (!skipAuth) {
+        // セッションからアクセストークンを取得
+        const supabase = createSupabaseBrowserClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          setError('認証が必要です。再度ログインしてください。');
+          return;
+        }
+
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      const response = await fetch('/api/admin/stats', {
+        headers,
+      });
       const result = await response.json();
 
       if (result.success) {
         setStats(result.data);
       } else {
-        setError(result.error?.message || result.error || 'データの取得に失敗しました');
+        // エラーがオブジェクトの場合はメッセージを抽出
+        const errorMessage = typeof result.error === 'object'
+          ? result.error?.message || JSON.stringify(result.error)
+          : result.error || 'データの取得に失敗しました';
+        setError(errorMessage);
       }
     } catch (err) {
       setError('ネットワークエラーが発生しました');

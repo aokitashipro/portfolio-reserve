@@ -9,7 +9,7 @@
 /**
  * 指定された週の開始日から7日分の日付配列を生成する
  *
- * @param weekStart - 週の開始日
+ * @param weekStart - 週の開始日（通常は月曜日）
  * @returns 7日分のDateオブジェクト配列
  *
  * @example
@@ -59,7 +59,7 @@ export function getWeekRangeText(weekStart: Date): string {
  *
  * @example
  * ```typescript
- * isClosedDay(new Date('2026-01-11')); // 日曜日 => true
+ * isClosedDay(new Date('2026-01-12')); // 日曜日 => true
  * isClosedDay(new Date('2026-01-06')); // 月曜日 => false
  * ```
  */

@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import AdminSidebar from '@/components/AdminSidebar';
 import Card from '@/components/Card';
 import Button from '@/components/Button';
 import EmptyState from '@/components/EmptyState';
 import BlockedTimeList from '@/components/admin/BlockedTimeList';
 import BlockedTimeForm from '@/components/admin/BlockedTimeForm';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 export interface BlockedTime {
   id: string;
@@ -14,6 +15,15 @@ export interface BlockedTime {
   endDateTime: string;
   reason: string | null;
   description: string | null;
+}
+
+// エラーメッセージを安全に抽出するヘルパー
+function extractErrorMessage(error: unknown): string {
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return 'エラーが発生しました';
 }
 
 export default function BlockedTimesPage() {
@@ -24,28 +34,53 @@ export default function BlockedTimesPage() {
   const [editingBlockedTime, setEditingBlockedTime] = useState<BlockedTime | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchBlockedTimes();
+  // アクセストークンを取得するヘルパー
+  const getAuthHeaders = useCallback(async (): Promise<Record<string, string>> => {
+    // テスト環境では認証をスキップ
+    const skipAuth = process.env.NEXT_PUBLIC_SKIP_AUTH_IN_TEST === 'true';
+
+    if (skipAuth) {
+      return {
+        'Content-Type': 'application/json',
+      };
+    }
+
+    const supabase = createSupabaseBrowserClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw new Error('認証が必要です。再度ログインしてください。');
+    }
+    return {
+      Authorization: `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+    };
   }, []);
 
-  const fetchBlockedTimes = async () => {
+  const fetchBlockedTimes = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/blocked-times');
+      const headers = await getAuthHeaders();
+      const response = await fetch('/api/admin/blocked-times', { headers });
       const result = await response.json();
 
       if (result.success) {
         setBlockedTimes(result.data);
       } else {
-        setError(result.error || 'データの取得に失敗しました');
+        setError(extractErrorMessage(result.error) || 'データの取得に失敗しました');
       }
     } catch (err) {
-      setError('ネットワークエラーが発生しました');
+      setError(err instanceof Error ? err.message : 'ネットワークエラーが発生しました');
       console.error('Blocked times fetch error:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [getAuthHeaders]);
+
+  useEffect(() => {
+    fetchBlockedTimes();
+  }, [fetchBlockedTimes]);
 
   const handleAdd = () => {
     setEditingBlockedTime(null);
@@ -63,8 +98,10 @@ export default function BlockedTimesPage() {
     }
 
     try {
+      const headers = await getAuthHeaders();
       const response = await fetch(`/api/admin/blocked-times/${id}`, {
         method: 'DELETE',
+        headers,
       });
 
       const result = await response.json();
@@ -74,16 +111,17 @@ export default function BlockedTimesPage() {
         fetchBlockedTimes();
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        setError(result.error || '削除に失敗しました');
+        setError(extractErrorMessage(result.error) || '削除に失敗しました');
       }
     } catch (err) {
-      setError('ネットワークエラーが発生しました');
+      setError(err instanceof Error ? err.message : 'ネットワークエラーが発生しました');
       console.error('Delete blocked time error:', err);
     }
   };
 
   const handleFormSubmit = async (data: Omit<BlockedTime, 'id'>) => {
     try {
+      const headers = await getAuthHeaders();
       const method = editingBlockedTime ? 'PATCH' : 'POST';
       const url = editingBlockedTime
         ? `/api/admin/blocked-times/${editingBlockedTime.id}`
@@ -91,9 +129,7 @@ export default function BlockedTimesPage() {
 
       const response = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(data),
       });
 
@@ -106,10 +142,10 @@ export default function BlockedTimesPage() {
         fetchBlockedTimes();
         setTimeout(() => setSuccessMessage(null), 3000);
       } else {
-        setError(result.error || '保存に失敗しました');
+        setError(extractErrorMessage(result.error) || '保存に失敗しました');
       }
     } catch (err) {
-      setError('ネットワークエラーが発生しました');
+      setError(err instanceof Error ? err.message : 'ネットワークエラーが発生しました');
       console.error('Save blocked time error:', err);
     }
   };

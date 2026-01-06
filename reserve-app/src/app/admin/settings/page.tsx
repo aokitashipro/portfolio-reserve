@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import AdminSidebar from '@/components/AdminSidebar';
+import { useAuthFetch, extractErrorMessage } from '@/hooks/useAuthFetch';
 
 /**
  * 店舗設定ページ
@@ -46,6 +48,7 @@ const SLOT_DURATIONS = [
 ];
 
 export default function SettingsPage() {
+  const { authFetch } = useAuthFetch();
   const [formData, setFormData] = useState<FormData>({
     storeName: '',
     storeEmail: '',
@@ -63,10 +66,12 @@ export default function SettingsPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/settings');
+      setPageLoading(true);
+      const response = await authFetch('/api/admin/settings');
       if (response.ok) {
         const data = await response.json();
         const settingsData = data.data;
@@ -83,17 +88,22 @@ export default function SettingsPage() {
           maxAdvanceBookingDays: settingsData.maxAdvanceBookingDays.toString(),
           cancellationDeadlineHours: settingsData.cancellationDeadlineHours?.toString() || '24',
         });
+      } else {
+        const result = await response.json();
+        setErrorMessage(extractErrorMessage(result.error) || '設定の取得に失敗しました');
       }
     } catch (error) {
       console.error('設定の取得に失敗しました:', error);
-      setErrorMessage('設定の取得に失敗しました');
+      setErrorMessage(error instanceof Error ? error.message : '設定の取得に失敗しました');
+    } finally {
+      setPageLoading(false);
     }
-  };
+  }, [authFetch]);
 
   // 設定を取得
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [fetchSettings]);
 
   const validateForm = (): boolean => {
     const errors: string[] = [];
@@ -153,11 +163,8 @@ export default function SettingsPage() {
     setErrorMessage('');
 
     try {
-      const response = await fetch('/api/admin/settings', {
+      const response = await authFetch('/api/admin/settings', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           storeName: formData.storeName,
           storeEmail: formData.storeEmail,
@@ -177,12 +184,12 @@ export default function SettingsPage() {
         setSuccessMessage('店舗設定を更新しました');
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
-        const error = await response.json();
-        setErrorMessage(error.message || '設定の更新に失敗しました');
+        const result = await response.json();
+        setErrorMessage(extractErrorMessage(result.error) || '設定の更新に失敗しました');
       }
     } catch (error) {
       console.error('設定の更新に失敗しました:', error);
-      setErrorMessage('設定の更新に失敗しました');
+      setErrorMessage(error instanceof Error ? error.message : '設定の更新に失敗しました');
     } finally {
       setIsLoading(false);
     }
@@ -197,41 +204,57 @@ export default function SettingsPage() {
     });
   };
 
+  if (pageLoading) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <AdminSidebar />
+        <main className="ml-64 flex-1 p-8">
+          <div className="flex h-96 items-center justify-center">
+            <div data-testid="loading-message" className="text-gray-500">読み込み中...</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 data-testid="page-title" className="text-2xl font-bold mb-6">
-        店舗設定
-      </h1>
+    <div className="flex min-h-screen bg-gray-50">
+      <AdminSidebar />
 
-      {/* 成功メッセージ */}
-      {successMessage && (
-        <div
-          data-testid="success-message"
-          className="mb-4 p-4 bg-green-100 text-green-700 rounded"
-        >
-          {successMessage}
-        </div>
-      )}
+      <main className="ml-64 flex-1 p-8">
+        <h1 data-testid="page-title" className="text-3xl font-bold text-gray-900 mb-6">
+          店舗設定
+        </h1>
 
-      {/* エラーメッセージ */}
-      {errorMessage && (
-        <div data-testid="error-message" className="mb-4 p-4 bg-red-100 text-red-700 rounded">
-          {errorMessage}
-        </div>
-      )}
+        {/* 成功メッセージ */}
+        {successMessage && (
+          <div
+            data-testid="success-message"
+            className="mb-4 p-4 bg-green-100 text-green-700 rounded"
+          >
+            {successMessage}
+          </div>
+        )}
 
-      {/* バリデーションエラー */}
-      {formErrors.length > 0 && (
-        <div data-testid="validation-error" className="mb-4 p-4 bg-red-100 text-red-700 rounded">
-          <ul>
-            {formErrors.map((error, index) => (
-              <li key={index}>{error}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+        {/* エラーメッセージ */}
+        {errorMessage && (
+          <div data-testid="error-message" className="mb-4 p-4 bg-red-100 text-red-700 rounded">
+            {errorMessage}
+          </div>
+        )}
 
-      <div className="bg-white rounded shadow p-6 space-y-8">
+        {/* バリデーションエラー */}
+        {formErrors.length > 0 && (
+          <div data-testid="validation-error" className="mb-4 p-4 bg-red-100 text-red-700 rounded">
+            <ul>
+              {formErrors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="bg-white rounded shadow p-6 space-y-8">
         {/* 店舗基本情報 */}
         <section data-testid="store-info-section">
           <h2 className="text-xl font-semibold mb-4">店舗基本情報</h2>
@@ -475,7 +498,8 @@ export default function SettingsPage() {
             {!isLoading && '保存'}
           </button>
         </div>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

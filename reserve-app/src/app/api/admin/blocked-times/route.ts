@@ -13,8 +13,8 @@ const blockedTimeCreateSchema = z
   .object({
     startDateTime: z.string().min(1, '開始日時は必須です'),
     endDateTime: z.string().min(1, '終了日時は必須です'),
-    reason: z.string().optional(),
-    description: z.string().optional(),
+    reason: z.string().nullable().optional(),
+    description: z.string().nullable().optional(),
   })
   .refine(
     (data) => {

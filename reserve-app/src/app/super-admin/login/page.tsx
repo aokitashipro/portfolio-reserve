@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
 import { loginSchema } from '@/lib/validations';
+import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 // Form state type
 type SuperAdminLoginFormData = {
@@ -61,34 +62,28 @@ export default function SuperAdminLoginPage() {
     }
 
     try {
-      const response = await fetch('/api/auth/super-admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+      // Supabase SDKで直接ログイン（セッションCookieが自動設定される）
+      const supabase = createSupabaseBrowserClient();
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
       });
 
-      const data = await response.json();
+      if (authError) {
+        console.error('Supabase Auth error:', authError);
+        setErrors({
+          general: authError.message === 'Invalid login credentials'
+            ? 'メールアドレスまたはパスワードが正しくありません'
+            : authError.message,
+        });
+        setIsLoading(false);
+        return;
+      }
 
-      if (!response.ok) {
-        if (data.errors && Array.isArray(data.errors)) {
-          const fieldErrors: Record<string, string> = {};
-          data.errors.forEach((error: { path?: string[]; message: string }) => {
-            if (error.path && error.path.length > 0) {
-              fieldErrors[error.path[0]] = error.message;
-            }
-          });
-          setErrors(fieldErrors);
-        } else {
-          setErrors({
-            general:
-              data.error?.message || data.message || 'ログインに失敗しました',
-          });
-        }
+      if (!authData.user || !authData.session) {
+        setErrors({
+          general: '認証に失敗しました',
+        });
         setIsLoading(false);
         return;
       }
