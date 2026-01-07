@@ -45,7 +45,10 @@ export function useMenus() {
   }, [authFetch]);
 
   useEffect(() => {
-    fetchMenus();
+    const init = async () => {
+      await fetchMenus();
+    };
+    init();
   }, [fetchMenus]);
 
   const filteredMenus = useMemo(() => {
