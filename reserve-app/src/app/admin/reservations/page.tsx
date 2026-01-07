@@ -1,280 +1,144 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import AdminSidebar from '@/components/AdminSidebar';
 import Button from '@/components/Button';
-import { useAuthFetch, extractErrorMessage } from '@/hooks/useAuthFetch';
 import {
   AddReservationModal,
   EditReservationModal,
-  DeleteReservationDialog as DeleteConfirmationDialog,
+  DeleteReservationDialog,
   ReservationDetailModal,
   ReservationViewTabs,
   ReservationListFilter,
   ReservationTable,
   ReservationCalendarFilter,
   WeeklyCalendar,
-  generateTimeSlots,
-  formatWeekTitle,
-  generateWeekDates,
+  ReservationPageHeader,
+  ReservationPageMessages,
+  useReservations,
+  useReservationModal,
+  useReservationFilter,
+  useWeeklyCalendar,
   formatDateString,
 } from '@/components/admin/reservations';
-import type { Reservation, ReservationFormData, ViewMode, UniqueItem } from '@/components/admin/reservations';
+import type { ViewMode } from '@/components/admin/reservations';
+
+// LocalStorageからviewModeを取得（クライアントサイドのみ）
+const getInitialViewMode = (): ViewMode => {
+  if (typeof window === 'undefined') return 'list';
+  const saved = localStorage.getItem('adminReservationsViewMode');
+  return saved === 'calendar' ? 'calendar' : 'list';
+};
 
 export default function AdminReservationsPage() {
-  const { authFetch } = useAuthFetch();
-  const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>(getInitialViewMode);
 
-  // 表示モード（一覧 or カレンダー）
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  // カスタムフック
+  const {
+    reservations,
+    loading,
+    error,
+    successMessage,
+    fetchReservations,
+    addReservation,
+    editReservation,
+    deleteReservation,
+  } = useReservations();
 
-  // モーダル・ダイアログの状態
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const {
+    showAddModal,
+    showEditModal,
+    showDeleteDialog,
+    showDetailModal,
+    selectedReservation,
+    prefilledDate,
+    prefilledTime,
+    openAddModal,
+    openEditModal,
+    openDeleteDialog,
+    openDetailModal,
+    closeModals,
+    switchToEdit,
+  } = useReservationModal();
 
-  // 新規予約モーダル用の初期値（カレンダーから選択した日時）
-  const [prefilledDate, setPrefilledDate] = useState<string>('');
-  const [prefilledTime, setPrefilledTime] = useState<string>('');
+  const {
+    statusFilter,
+    dateRangeFilter,
+    searchQuery,
+    setStatusFilter,
+    setDateRangeFilter,
+    setSearchQuery,
+    filteredReservations,
+    staffFilterCalendar,
+    menuFilterCalendar,
+    statusFilterCalendar,
+    setStaffFilterCalendar,
+    setMenuFilterCalendar,
+    setStatusFilterCalendar,
+    filteredReservationsCalendar,
+    uniqueStaff,
+    uniqueMenus,
+  } = useReservationFilter(reservations);
 
-  // フィルター・検索（一覧表示用）
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [dateRangeFilter, setDateRangeFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // カレンダー表示用フィルター
-  const [staffFilterCalendar, setStaffFilterCalendar] = useState('all');
-  const [menuFilterCalendar, setMenuFilterCalendar] = useState('all');
-  const [statusFilterCalendar, setStatusFilterCalendar] = useState('all');
-
-  // 週間カレンダー用state
-  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
-    const baseDate = new Date('2026-01-06');
-    baseDate.setHours(0, 0, 0, 0);
-    return baseDate;
-  });
-
-  // LocalStorageから表示モードを読み込む
-  useEffect(() => {
-    const savedMode = localStorage.getItem('adminReservationsViewMode');
-    if (savedMode === 'calendar' || savedMode === 'list') {
-      setViewMode(savedMode);
-    }
-  }, []);
+  const {
+    weekDates,
+    weekTitle,
+    timeSlots,
+    handlePrevWeek,
+    handleNextWeek,
+  } = useWeeklyCalendar();
 
   // viewModeが変更されたらLocalStorageに保存
   useEffect(() => {
     localStorage.setItem('adminReservationsViewMode', viewMode);
   }, [viewMode]);
 
-  const fetchReservations = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await authFetch('/api/admin/reservations');
-      const result = await response.json();
-
-      if (result.success) {
-        setReservations(result.data?.data || []);
-      } else {
-        setError(extractErrorMessage(result.error) || 'データの取得に失敗しました');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'ネットワークエラーが発生しました');
-      console.error('Reservations fetch error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [authFetch]);
-
-  useEffect(() => {
-    fetchReservations();
-  }, [fetchReservations]);
-
-  // モーダル操作ハンドラー
-  const handleAddReservation = () => {
-    setPrefilledDate('');
-    setPrefilledTime('');
-    setShowAddModal(true);
-  };
-
-  const handleEditReservation = (reservation: Reservation) => {
-    setSelectedReservation(reservation);
-    setShowEditModal(true);
-  };
-
-  const handleDeleteReservation = (reservation: Reservation) => {
-    setSelectedReservation(reservation);
-    setShowDeleteDialog(true);
-  };
-
-  const handleShowDetail = (reservation: Reservation) => {
-    setSelectedReservation(reservation);
-    setShowDetailModal(true);
-  };
-
-  const closeModals = () => {
-    setShowAddModal(false);
-    setShowEditModal(false);
-    setShowDeleteDialog(false);
-    setShowDetailModal(false);
-    setSelectedReservation(null);
-    setPrefilledDate('');
-    setPrefilledTime('');
-  };
-
-  // CRUD操作
-  const submitAddReservation = async (formData: ReservationFormData) => {
-    try {
-      if (!formData.customer || !formData.menu || !formData.staff || !formData.date || !formData.time) {
-        throw new Error('必須項目を入力してください');
-      }
-
-      const response = await authFetch('/api/admin/reservations', {
-        method: 'POST',
-        body: JSON.stringify(formData),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setSuccessMessage('予約を追加しました');
-        closeModals();
-        fetchReservations();
-      } else {
-        throw new Error(extractErrorMessage(result.error) || '予約の追加に失敗しました');
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '予期しないエラーが発生しました';
-      setError(errorMessage);
-    }
-  };
-
-  const submitEditReservation = async (formData: ReservationFormData) => {
-    try {
-      if (!selectedReservation) { return; }
-
-      const response = await authFetch(`/api/admin/reservations/${selectedReservation.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(formData),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setSuccessMessage('予約を更新しました');
-        closeModals();
-        fetchReservations();
-      } else {
-        throw new Error(extractErrorMessage(result.error) || '予約の更新に失敗しました');
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '予期しないエラーが発生しました';
-      setError(errorMessage);
-    }
-  };
-
-  const confirmDelete = async () => {
-    try {
-      if (!selectedReservation) { return; }
-
-      const response = await authFetch(`/api/admin/reservations/${selectedReservation.id}`, {
-        method: 'DELETE',
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setSuccessMessage('予約を削除しました');
-        closeModals();
-        fetchReservations();
-      } else {
-        throw new Error(extractErrorMessage(result.error) || '予約の削除に失敗しました');
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '予期しないエラーが発生しました';
-      setError(errorMessage);
-    }
-  };
-
-  // カレンダー関連
-  const timeSlots = useMemo(() => generateTimeSlots(), []);
-  const weekTitle = useMemo(() => formatWeekTitle(currentWeekStart), [currentWeekStart]);
-  const weekDates = useMemo(() => generateWeekDates(currentWeekStart), [currentWeekStart]);
-
-  const handlePrevWeek = () => {
-    const newWeekStart = new Date(currentWeekStart);
-    newWeekStart.setDate(currentWeekStart.getDate() - 7);
-    setCurrentWeekStart(newWeekStart);
-  };
-
-  const handleNextWeek = () => {
-    const newWeekStart = new Date(currentWeekStart);
-    newWeekStart.setDate(currentWeekStart.getDate() + 7);
-    setCurrentWeekStart(newWeekStart);
-  };
-
-  // フィルタリング
-  const filteredReservationsCalendar = useMemo(() => {
-    return reservations.filter((reservation) => {
-      if (staffFilterCalendar !== 'all' && reservation.staffId !== staffFilterCalendar) { return false; }
-      if (menuFilterCalendar !== 'all' && reservation.menuId !== menuFilterCalendar) { return false; }
-      if (statusFilterCalendar !== 'all' && reservation.status !== statusFilterCalendar.toUpperCase()) { return false; }
-      return true;
-    });
-  }, [reservations, staffFilterCalendar, menuFilterCalendar, statusFilterCalendar]);
-
-  const filteredReservations = useMemo(() => {
-    return reservations.filter((reservation) => {
-      if (statusFilter !== 'all' && reservation.status !== statusFilter.toUpperCase()) {
-        return false;
-      }
-      if (searchQuery && !reservation.customerName.includes(searchQuery)) {
-        return false;
-      }
-      return true;
-    });
-  }, [reservations, statusFilter, searchQuery]);
-
-  const uniqueStaff: UniqueItem[] = useMemo(() => {
-    const staffMap = new Map<string, string>();
-    reservations.forEach((r) => {
-      if (r.staffId && r.staffName) {
-        staffMap.set(r.staffId, r.staffName);
-      }
-    });
-    return Array.from(staffMap.entries()).map(([id, name]) => ({ id, name }));
-  }, [reservations]);
-
-  const uniqueMenus: UniqueItem[] = useMemo(() => {
-    const menuMap = new Map<string, string>();
-    reservations.forEach((r) => {
-      if (r.menuId && r.menuName) {
-        menuMap.set(r.menuId, r.menuName);
-      }
-    });
-    return Array.from(menuMap.entries()).map(([id, name]) => ({ id, name }));
-  }, [reservations]);
-
   // タイムブロッククリック
   const handleTimeBlockClick = (date: Date, time: string) => {
     const dateStr = formatDateString(date);
-
     const reservation = filteredReservationsCalendar.find(
       (r) => r.reservedDate === dateStr && r.reservedTime === time
     );
 
     if (reservation) {
-      handleShowDetail(reservation);
+      openDetailModal(reservation);
     } else {
-      setPrefilledDate(dateStr);
-      setPrefilledTime(time);
-      setShowAddModal(true);
+      openAddModal(dateStr, time);
     }
+  };
+
+  // 予約追加送信
+  const handleAddSubmit = async (formData: Parameters<typeof addReservation>[0]) => {
+    const success = await addReservation(formData);
+    if (success) closeModals();
+  };
+
+  // 予約編集送信
+  const handleEditSubmit = async (formData: Parameters<typeof editReservation>[1]) => {
+    if (!selectedReservation) return;
+    const success = await editReservation(selectedReservation.id, formData);
+    if (success) closeModals();
+  };
+
+  // 予約削除確認
+  const handleDeleteConfirm = async () => {
+    if (!selectedReservation) return;
+    const success = await deleteReservation(selectedReservation.id);
+    if (success) closeModals();
+  };
+
+  // 詳細モーダルからキャンセル
+  const handleCancelFromDetail = async () => {
+    if (!selectedReservation) return;
+    await editReservation(selectedReservation.id, {
+      menu: selectedReservation.menuName,
+      staff: selectedReservation.staffName,
+      date: selectedReservation.reservedDate,
+      time: selectedReservation.reservedTime,
+      status: 'CANCELLED',
+      notes: selectedReservation.notes,
+    });
+    closeModals();
   };
 
   // ローディング表示
@@ -284,9 +148,7 @@ export default function AdminReservationsPage() {
         <AdminSidebar />
         <main className="ml-64 flex-1 p-8">
           <div className="flex h-96 items-center justify-center">
-            <div data-testid="loading-message" className="text-gray-500">
-              読み込み中...
-            </div>
+            <div data-testid="loading-message" className="text-gray-500">読み込み中...</div>
           </div>
         </main>
       </div>
@@ -315,27 +177,8 @@ export default function AdminReservationsPage() {
       <AdminSidebar />
 
       <main className="ml-64 flex-1 p-8">
-        {/* ヘッダー */}
-        <div className="mb-8 flex items-center justify-between">
-          <h1 data-testid="page-title" className="text-3xl font-bold text-gray-900">
-            予約一覧
-          </h1>
-          <Button data-testid="add-reservation-button" variant="primary" onClick={handleAddReservation}>
-            <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            新規予約を追加
-          </Button>
-        </div>
-
-        {/* 成功メッセージ */}
-        {successMessage && (
-          <div data-testid="success-message" className="mb-4 rounded-lg bg-green-50 p-4 text-green-800">
-            {successMessage}
-          </div>
-        )}
-
-        {/* 表示切り替えタブ */}
+        <ReservationPageHeader onAddClick={() => openAddModal()} />
+        <ReservationPageMessages successMessage={successMessage} />
         <ReservationViewTabs viewMode={viewMode} onViewModeChange={setViewMode} />
 
         {/* 一覧表示 */}
@@ -351,9 +194,9 @@ export default function AdminReservationsPage() {
             />
             <ReservationTable
               reservations={filteredReservations}
-              onShowDetail={handleShowDetail}
-              onEdit={handleEditReservation}
-              onDelete={handleDeleteReservation}
+              onShowDetail={openDetailModal}
+              onEdit={openEditModal}
+              onDelete={openDeleteDialog}
             />
           </>
         )}
@@ -387,7 +230,7 @@ export default function AdminReservationsPage() {
         {showAddModal && (
           <AddReservationModal
             onClose={closeModals}
-            onSubmit={submitAddReservation}
+            onSubmit={handleAddSubmit}
             prefilledDate={prefilledDate}
             prefilledTime={prefilledTime}
           />
@@ -397,15 +240,15 @@ export default function AdminReservationsPage() {
           <EditReservationModal
             reservation={selectedReservation}
             onClose={closeModals}
-            onSubmit={submitEditReservation}
+            onSubmit={handleEditSubmit}
           />
         )}
 
         {showDeleteDialog && selectedReservation && (
-          <DeleteConfirmationDialog
+          <DeleteReservationDialog
             reservation={selectedReservation}
             onClose={closeModals}
-            onConfirm={confirmDelete}
+            onConfirm={handleDeleteConfirm}
           />
         )}
 
@@ -413,20 +256,8 @@ export default function AdminReservationsPage() {
           <ReservationDetailModal
             reservation={selectedReservation}
             onClose={closeModals}
-            onEdit={() => {
-              setShowDetailModal(false);
-              setShowEditModal(true);
-            }}
-            onCancel={() => {
-              submitEditReservation({
-                menu: selectedReservation.menuName,
-                staff: selectedReservation.staffName,
-                date: selectedReservation.reservedDate,
-                time: selectedReservation.reservedTime,
-                status: 'CANCELLED',
-                notes: selectedReservation.notes,
-              });
-            }}
+            onEdit={switchToEdit}
+            onCancel={handleCancelFromDetail}
           />
         )}
       </main>

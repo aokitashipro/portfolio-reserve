@@ -78,3 +78,49 @@ export interface StaffListProps {
   onDelete: (staff: Staff) => void;
   onShiftSetting: (staff: Staff) => void;
 }
+
+/**
+ * カスタムフック用の型定義
+ */
+
+export interface UseStaffReturn {
+  staff: Staff[];
+  loading: boolean;
+  error: string | null;
+  successMessage: string | null;
+  fetchStaff: () => Promise<void>;
+  addStaff: (data: StaffFormData) => Promise<boolean>;
+  editStaff: (id: string, data: StaffFormData) => Promise<boolean>;
+  deleteStaff: (id: string) => Promise<boolean>;
+  clearMessages: () => void;
+}
+
+export interface UseStaffModalReturn {
+  showAddModal: boolean;
+  showEditModal: boolean;
+  showDeleteDialog: boolean;
+  showShiftModal: boolean;
+  selectedStaff: Staff | null;
+  formData: StaffFormData;
+  openAddModal: () => void;
+  openEditModal: (staff: Staff) => void;
+  openDeleteDialog: (staff: Staff) => void;
+  openShiftModal: (staff: Staff) => void;
+  closeModals: () => void;
+  setFormData: React.Dispatch<React.SetStateAction<StaffFormData>>;
+}
+
+export interface UseShiftVacationReturn {
+  shiftFormData: ShiftFormData;
+  vacationFormData: VacationFormData;
+  activeTab: 'shift' | 'vacation';
+  initializeShiftData: (staff: Staff) => Promise<void>;
+  submitShift: (staffId: string) => Promise<boolean>;
+  submitVacation: (staffId: string) => Promise<boolean>;
+  setActiveTab: (tab: 'shift' | 'vacation') => void;
+  setShiftFormData: React.Dispatch<React.SetStateAction<ShiftFormData>>;
+  setVacationFormData: React.Dispatch<React.SetStateAction<VacationFormData>>;
+  resetShiftVacation: () => void;
+  error: string | null;
+  successMessage: string | null;
+}
